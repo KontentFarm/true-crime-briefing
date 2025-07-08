@@ -1,6 +1,4 @@
 import anthropic
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, To
 import os
 import requests
 import json
@@ -27,16 +25,13 @@ class TrueCrimeBriefingGenerator:
             logger.error(f"Failed to initialize Anthropic client: {e}")
             raise
             
-        self.sendgrid_client = SendGridAPIClient(
-            api_key=os.getenv('SENDGRID_API_KEY')
-        )
-        self.sender_email = os.getenv('SENDER_EMAIL')
-        self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
+        self.sender_email = os.getenv('GMAIL_ADDRESS')
+        self.gmail_password = os.getenv('GMAIL_APP_PASSWORD')
         self._validate_environment()
 
     def _validate_environment(self):    
         """Validate all required environment variables are present."""
-        required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
+        required_vars = ['ANTHROPIC_API_KEY', 'GMAIL_ADDRESS', 'GMAIL_APP_PASSWORD']
         missing_vars = [var for var in required_vars if not os.getenv(var)]
 
         if missing_vars:        
@@ -205,19 +200,18 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             return f"Error generating briefing: {str(e)}"
     
     def send_email(self, briefing_content):
-        """Send the briefing via email"""
+        """Send the briefing via Gmail SMTP"""
         
-        print("🔧 Setting up email configuration...")
+        print("🔧 Setting up Gmail SMTP configuration...")
         
-        # Email configuration
-        smtp_server = "smtp.sendgrid.net"
+        # Gmail SMTP configuration
+        smtp_server = "smtp.gmail.com"
         smtp_port = 587
-        sender_email = os.environ.get("SENDER_EMAIL")
-        sender_password = os.environ.get("SENDGRID_API_KEY")
+        sender_email = os.environ.get("GMAIL_ADDRESS")
+        sender_password = os.environ.get("GMAIL_APP_PASSWORD")
         
         print(f"📧 Sender email: {sender_email}")
-        print(f"🔑 SendGrid API key present: {'Yes' if sender_password else 'No'}")
-        print(f"🔑 SendGrid API key starts with SG.: {'Yes' if sender_password and sender_password.startswith('SG.') else 'No'}")
+        print(f"🔑 Gmail App Password present: {'Yes' if sender_password else 'No'}")
         
         # Recipients
         recipients = ["danny@kontentfarm.com", "rod@kontentfarm.com"]
@@ -235,22 +229,22 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         print("📝 Email message created successfully")
         
         try:
-            print("🌐 Connecting to SendGrid SMTP server...")
-            # Send email
+            print("🌐 Connecting to Gmail SMTP server...")
+            # Send email via Gmail
             server = smtplib.SMTP(smtp_server, smtp_port)
             print("🔐 Starting TLS encryption...")
             server.starttls()
-            print("🔑 Logging in to SendGrid...")
+            print("🔑 Logging in to Gmail...")
             server.login(sender_email, sender_password)
             print("📤 Sending email message...")
             server.send_message(msg)
             server.quit()
-            print("✅ Email sent successfully!")
-            logger.info("Email sent successfully!")
+            print("✅ Email sent successfully via Gmail!")
+            logger.info("Email sent successfully via Gmail!")
             return True
         except Exception as e:
-            print(f"❌ Error sending email: {str(e)}")
-            logger.error(f"Error sending email: {str(e)}")
+            print(f"❌ Error sending email via Gmail: {str(e)}")
+            logger.error(f"Error sending email via Gmail: {str(e)}")
             return False
     
     def run_daily_briefing(self):
