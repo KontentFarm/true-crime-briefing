@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 class TrueCrimeBriefingGenerator:
-def __init__(self):
+    def __init__(self):
         # Initialize Anthropic client with error handling for GitHub Actions
         api_key = os.getenv('ANTHROPIC_API_KEY')
         if not api_key:
