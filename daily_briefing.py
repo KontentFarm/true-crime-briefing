@@ -234,5 +234,5 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             print(briefing)
 
 if __name__ == "__main__":
-    briefing_system = TrueCrimeBriefing()
+    briefing_system = TrueCrimeBriefingGenerator()
     briefing_system.run_daily_briefing()
