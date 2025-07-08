@@ -9,9 +9,26 @@ from email.mime.multipart import MIMEMultipart
 
 class TrueCrimeBriefing:
     def __init__(self):
-        self.anthropic_client = anthropic.Anthropic(
-            api_key=os.environ.get("ANTHROPIC_API_KEY")
-        )
+def __init__(self):
+    # Initialize Anthropic client with error handling for GitHub Actions
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+        
+    try:
+        self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+    except Exception as e:
+        logger.error(f"Failed to initialize Anthropic client: {e}")
+        raise
+        
+    self.sendgrid_client = SendGridAPIClient(
+        api_key=os.getenv('SENDGRID_API_KEY')
+    )
+    self.sender_email = os.getenv('SENDER_EMAIL')
+    self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
+    
+    # Validate required environment variables
+    self._validate_environment()
         
     def get_research_prompt(self):
         """Return the comprehensive True Crime Discovery Agent prompt"""
