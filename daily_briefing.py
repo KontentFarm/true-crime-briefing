@@ -4,9 +4,15 @@ from sendgrid.helpers.mail import Mail, To
 import os
 import requests
 import json
+import smtplib
+import logging
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TrueCrimeBriefingGenerator:
     def __init__(self):
@@ -29,14 +35,18 @@ class TrueCrimeBriefingGenerator:
         self._validate_environment()
 
     def _validate_environment(self):    
-"""Validate all required environment variables are present."""
-required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
-missing_vars = [var for var in required_vars if not os.getenv(var)]
+        """Validate all required environment variables are present."""
+        required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
 
-if missing_vars:        
-raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+        if missing_vars:        
+            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-def get_research_prompt(self):
+    def get_research_prompt(self):
+        """Generate the research prompt with current date"""
+        current_date = datetime.now().strftime('%B %d, %Y')
+        
+        return f"""
 ## ROLE DEFINITION
 You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories that have captured national/international attention for premium content development opportunities.
 
@@ -55,41 +65,41 @@ You are an elite content discovery specialist operating at the level of the top 
 
 ## RESEARCH METHODOLOGY
 
-**1. SOURCE MONITORING PRIORITIES**
+**1. PREMIUM SOURCE MONITORING PRIORITIES**
+**Tier 1 Premium Sources (With Access):**
+- The New York Times, Washington Post, The Atlantic, Vanity Fair
+- New Yorker, Wired, NYMag, The Cut, Curbed
+- Time Magazine, Chicago Tribune, LA Times, The Daily Beast
+
+**Tier 2 Standard Sources:**
 - Major news outlets (AP, Reuters, BBC, CNN, Fox, ABC, CBS, NBC)
 - Local news networks across major markets
-- Police department press releases and public records
 - Court filing databases and legal proceedings
 - True crime communities (Reddit, specialized forums)
 - Social media trending topics and viral content
 - Appeals court filings and post-conviction developments
-- Cold case unit announcements and reopened investigations
 - DNA database hits and forensic technology breakthroughs
-- Innocence Project developments and exonerations
+- Solved case archives and closed investigations
 
 **2. EXPANDED CASE CATEGORIES**
 
-**Active/Breaking Cases:**
-- Ongoing investigations with developing evidence
-- Recent arrests in high-profile cases
-- Trials with unexpected developments or revelations
+**FOCUS: ADJUDICATED CASES ONLY - NO ONGOING INVESTIGATIONS**
 
 **Adjudicated Cases with New Developments:**
-- Post-conviction appeals with new evidence
-- Wrongful conviction cases and exonerations
-- Death row cases with fresh legal challenges
+- Post-conviction appeals with new evidence (EXCLUDING wrongful conviction/exoneration cases)
 - Solved cases with new victim discoveries or co-conspirators
 - Cases where perpetrators reveal new information from prison
-- Family members or witnesses coming forward years later
+- Family members or witnesses coming forward years later with new details
+- New forensic analysis of closed cases
+- Documentary crews uncovering previously unknown evidence in solved cases
 
 **Famous Cold Cases with Fresh Angles:**
-- DNA technology breakthroughs (genetic genealogy, advanced testing)
-- New witness testimony or deathbed confessions
+- DNA technology breakthroughs (genetic genealogy, advanced testing) that provide new leads
+- New witness testimony or deathbed confessions in unsolved cases
 - Evidence re-examination with modern forensic techniques
-- Technology applications (facial recognition, cell tower analysis)
-- Investigative techniques revealing new suspects or motives
-- Anniversary-driven renewed investigations
-- Social media campaigns uncovering new leads
+- Technology applications (facial recognition, cell tower analysis) revealing new information
+- Anniversary-driven renewed investigations that yield concrete developments
+- Social media campaigns uncovering new leads or witnesses
 
 **3. MANDATORY COMPETITIVE LANDSCAPE VERIFICATION**
 
@@ -121,9 +131,14 @@ You are an elite content discovery specialist operating at the level of the top 
 - 2-3 TIER 3 Cases (Long-term Archive/Future Consideration)
 
 **Case Type Distribution:**
-- 4-5 Active/Breaking Cases
-- 3-4 Adjudicated Cases with New Developments
-- 2-3 Famous Cold Cases with Fresh Evidence/Technology
+- 6-7 Adjudicated Cases with New Developments
+- 3-4 Famous Cold Cases with Fresh Evidence/Technology
+
+**STRICT EXCLUSIONS:**
+- NO Innocence Project cases or wrongful conviction stories
+- NO ongoing investigations or active trials
+- NO cases still in the legal system
+- ONLY adjudicated (legally resolved) cases with new developments
 
 ## SEARCH EXECUTION PROTOCOL
 
@@ -145,12 +160,13 @@ Execute today's daily briefing for {current_date}. Provide exactly 10 cases foll
 **Individual Case Analysis (10 Cases):**
 
 **Case #[X] - [Tier Level] - [Case Type] - [Story Title]**
-- **Case Type:** Active/Breaking | Adjudicated w/New Development | Cold Case w/Fresh Evidence
+- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
 - **Logline:** Compelling one-sentence hook
 - **Key Details:** Timeline, location, principals involved
+- **ADJUDICATION STATUS:** Confirm case is legally resolved/closed
 - **NEW DEVELOPMENT SUMMARY:** What makes this story fresh/different from prior coverage
 - **Production Assets:** Available footage, documents, interview subjects
-- **Legal Status:** Current investigations, proceedings, clearance issues
+- **Legal Status:** Post-conviction status, clearance issues
 - **COMPETITIVE VERIFICATION:** Comprehensive check results across all platforms
   - **Platforms Searched:** Complete list of networks/services checked
   - **Previous Coverage Found:** Any existing production details
@@ -162,6 +178,12 @@ Execute today's daily briefing for {current_date}. Provide exactly 10 cases foll
 Execute this protocol with the analytical rigor of a federal investigation and the storytelling instincts of an award-winning documentarian. Focus on stories that will create compelling narratives, lean into fandoms, build strong IP, and deliver breakout format potential for premium content development.
 
 CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully researched cases meeting all specified criteria and analysis standards, including mandatory verification that either no major production coverage exists OR substantial new developments justify fresh production approach.
+
+**MANDATORY EXCLUSIONS:**
+- NO Innocence Project cases or wrongful conviction stories
+- NO ongoing investigations, active trials, or pending legal cases
+- ONLY adjudicated (legally closed/resolved) cases with substantial new developments
+- NO exoneration or "justice reform" narratives
         """
         
     def run_research(self):
@@ -179,6 +201,7 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             )
             return message.content[0].text
         except Exception as e:
+            logger.error(f"Error generating briefing: {str(e)}")
             return f"Error generating briefing: {str(e)}"
     
     def send_email(self, briefing_content):
@@ -209,30 +232,30 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             server.login(sender_email, sender_password)
             server.send_message(msg)
             server.quit()
-            print("Email sent successfully!")
+            logger.info("Email sent successfully!")
             return True
         except Exception as e:
-            print(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email: {str(e)}")
             return False
     
     def run_daily_briefing(self):
         """Main execution function"""
-        print(f"Starting daily briefing for {datetime.now().strftime('%B %d, %Y')}")
+        logger.info(f"Starting daily briefing for {datetime.now().strftime('%B %d, %Y')}")
         
         # Generate research briefing
-        print("Generating research briefing...")
+        logger.info("Generating research briefing...")
         briefing = self.run_research()
         
         # Send email
-        print("Sending email...")
+        logger.info("Sending email...")
         success = self.send_email(briefing)
         
         if success:
-            print("Daily briefing completed successfully!")
+            logger.info("Daily briefing completed successfully!")
         else:
-            print("Daily briefing generated but email failed to send.")
-            print("Briefing content:")
-            print(briefing)
+            logger.error("Daily briefing generated but email failed to send.")
+            logger.info("Briefing content:")
+            logger.info(briefing)
 
 if __name__ == "__main__":
     briefing_system = TrueCrimeBriefingGenerator()
