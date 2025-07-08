@@ -207,14 +207,21 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
     def send_email(self, briefing_content):
         """Send the briefing via email"""
         
+        print("🔧 Setting up email configuration...")
+        
         # Email configuration
         smtp_server = "smtp.sendgrid.net"
         smtp_port = 587
         sender_email = os.environ.get("SENDER_EMAIL")
         sender_password = os.environ.get("SENDGRID_API_KEY")
         
+        print(f"📧 Sender email: {sender_email}")
+        print(f"🔑 SendGrid API key present: {'Yes' if sender_password else 'No'}")
+        print(f"🔑 SendGrid API key starts with SG.: {'Yes' if sender_password and sender_password.startswith('SG.') else 'No'}")
+        
         # Recipients
         recipients = ["danny@kontentfarm.com", "rod@kontentfarm.com"]
+        print(f"📫 Recipients: {', '.join(recipients)}")
         
         # Create message
         msg = MIMEMultipart()
@@ -225,37 +232,57 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         # Add body
         msg.attach(MIMEText(briefing_content, 'plain'))
         
+        print("📝 Email message created successfully")
+        
         try:
+            print("🌐 Connecting to SendGrid SMTP server...")
             # Send email
             server = smtplib.SMTP(smtp_server, smtp_port)
+            print("🔐 Starting TLS encryption...")
             server.starttls()
+            print("🔑 Logging in to SendGrid...")
             server.login(sender_email, sender_password)
+            print("📤 Sending email message...")
             server.send_message(msg)
             server.quit()
+            print("✅ Email sent successfully!")
             logger.info("Email sent successfully!")
             return True
         except Exception as e:
+            print(f"❌ Error sending email: {str(e)}")
             logger.error(f"Error sending email: {str(e)}")
             return False
     
     def run_daily_briefing(self):
         """Main execution function"""
+        print(f"🚀 Starting daily briefing for {datetime.now().strftime('%B %d, %Y')}")
         logger.info(f"Starting daily briefing for {datetime.now().strftime('%B %d, %Y')}")
         
-        # Generate research briefing
-        logger.info("Generating research briefing...")
-        briefing = self.run_research()
-        
-        # Send email
-        logger.info("Sending email...")
-        success = self.send_email(briefing)
-        
-        if success:
-            logger.info("Daily briefing completed successfully!")
-        else:
-            logger.error("Daily briefing generated but email failed to send.")
-            logger.info("Briefing content:")
-            logger.info(briefing)
+        try:
+            # Generate research briefing
+            print("📝 Generating research briefing...")
+            logger.info("Generating research briefing...")
+            briefing = self.run_research()
+            print(f"✅ Briefing generated successfully! Length: {len(briefing)} characters")
+            
+            # Send email
+            print("📧 Attempting to send email...")
+            logger.info("Sending email...")
+            success = self.send_email(briefing)
+            
+            if success:
+                print("✅ Email sent successfully!")
+                logger.info("Daily briefing completed successfully!")
+            else:
+                print("❌ Email failed to send!")
+                logger.error("Daily briefing generated but email failed to send.")
+                print("Briefing content preview:")
+                print(briefing[:500] + "..." if len(briefing) > 500 else briefing)
+                
+        except Exception as e:
+            print(f"❌ Critical error in run_daily_briefing: {str(e)}")
+            logger.error(f"Critical error in run_daily_briefing: {str(e)}")
+            raise
 
 if __name__ == "__main__":
     briefing_system = TrueCrimeBriefingGenerator()
