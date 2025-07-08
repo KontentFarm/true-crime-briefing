@@ -9,26 +9,26 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 class TrueCrimeBriefingGenerator:
-    def __init__(self):
-    # Initialize Anthropic client with error handling for GitHub Actions
-    api_key = os.getenv('ANTHROPIC_API_KEY')
-    if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-        
-    try:
-    self.anthropic_client = anthropic.Anthropic(api_key=api_key)
-    except Exception as e:
-        logger.error(f"Failed to initialize Anthropic client: {e}")
-        raise
-        
-    self.sendgrid_client = SendGridAPIClient(
-    api_key=os.getenv('SENDGRID_API_KEY')
-    )
-    self.sender_email = os.getenv('SENDER_EMAIL')
-    self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email) 
-    self._validate_environment()
+def __init__(self):
+        # Initialize Anthropic client with error handling for GitHub Actions
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+            
+        try:
+            self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+        except Exception as e:
+            logger.error(f"Failed to initialize Anthropic client: {e}")
+            raise
+            
+        self.sendgrid_client = SendGridAPIClient(
+            api_key=os.getenv('SENDGRID_API_KEY')
+        )
+        self.sender_email = os.getenv('SENDER_EMAIL')
+        self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
+        self._validate_environment()
 
-def _validate_environment(self):
+    def _validate_environment(self):    
 """Validate all required environment variables are present."""
 required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
 missing_vars = [var for var in required_vars if not os.getenv(var)]
