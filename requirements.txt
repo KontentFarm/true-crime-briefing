@@ -1,2 +1,249 @@
-anthropic==0.25.0
-requests==2.31.0
+#!/usr/bin/env python3
+"""
+Daily True Crime Content Discovery Briefing Automation
+Elite-level research and analysis for Kontent Farm premium content development
+"""
+
+import os
+import sys
+import logging
+from datetime import datetime, timezone
+from typing import List, Dict, Any
+import json
+import requests
+import anthropic
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, To
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('briefing.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class TrueCrimeBriefingGenerator:
+    def __init__(self):
+    def __init__(self):
+        # Initialize Anthropic client with error handling for GitHub Actions
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+            
+        try:
+            self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+        except Exception as e:
+            logger.error(f"Failed to initialize Anthropic client: {e}")
+            raise
+        self.sendgrid_client = SendGridAPIClient(
+            api_key=os.getenv('SENDGRID_API_KEY')
+        )
+        self.sender_email = os.getenv('SENDER_EMAIL')
+        self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
+        
+        # Validate required environment variables
+        self._validate_environment()
+
+    def _validate_environment(self):
+        """Validate all required environment variables are present."""
+        required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+            sys.exit(1)
+        
+        logger.info("Environment validation successful")
+
+    def generate_briefing(self) -> str:
+        """Generate the daily true crime briefing using Claude."""
+        today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        
+        system_prompt = """You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories for premium content development opportunities.
+
+Execute comprehensive search and analysis following these parameters:
+
+PRIMARY OBJECTIVE: Discover and evaluate breaking or developing stories with high production potential for streaming, broadcast, and cable networks through compelling narratives, strong IP potential, and breakout format opportunities.
+
+SEARCH FOCUS AREAS:
+- True crime cases with unusual circumstances or compelling characters  
+- "Stranger than fiction" real-life events that defy conventional explanation
+- Stories generating significant media buzz and public fascination
+- Cases with unresolved mysteries or ongoing developments
+- Events with strong visual/documentary potential
+- Adjudicated cases with new, never-before-seen developments
+- Famous cold cases with fresh evidence, technology applications, or witness revelations
+
+RESEARCH METHODOLOGY:
+1. Monitor major news outlets, police department press releases, court filings
+2. Track DNA breakthroughs, cold case unit announcements, forensic technology advances
+3. Verify NO EXISTING MAJOR PRODUCTION COVERAGE or substantial new developments justify fresh production
+
+CASE QUALIFICATION CRITERIA:
+- Verified factual basis with credible sources
+- Compelling human interest angle
+- Visual/documentary production potential  
+- National or international media coverage
+- Unique circumstances separating from routine crime
+- NO EXISTING MAJOR PRODUCTION COVERAGE OR SUBSTANTIAL NEW DEVELOPMENTS
+
+OUTPUT REQUIREMENTS:
+Deliver exactly 10 cases minimum per briefing with distribution:
+- 3-4 TIER 1 Cases (Immediate Development Potential)
+- 4-5 TIER 2 Cases (Short-term Monitoring/Development) 
+- 2-3 TIER 3 Cases (Long-term Archive/Future Consideration)
+
+For each case provide:
+- Case Type Classification
+- Compelling logline
+- Key details and timeline
+- NEW DEVELOPMENT SUMMARY
+- Production assets available
+- Legal status and clearance considerations
+- COMPETITIVE VERIFICATION across all major platforms
+- Development recommendation (GO/NO-GO)
+- Next steps for advancement
+
+Apply the analytical rigor of a federal investigation and storytelling instincts of an award-winning documentarian. Focus on stories that create compelling narratives, build strong IP, and deliver breakout format potential."""
+
+        user_prompt = f"""Execute daily briefing protocol for {today}.
+
+Deliver comprehensive email briefing with subject: "Daily Content Discovery Briefing - {today} - 10 Premium Development Opportunities"
+
+Include:
+- Executive summary with day's most compelling discoveries
+- 10 individual case analyses ranked by development priority  
+- Weekly trending analysis
+- Competitive landscape alerts
+
+Use web search extensively to find current breaking cases, DNA breakthroughs, cold case developments, and verify competitive landscape across all streaming/cable/broadcast networks.
+
+Apply Chris Voss negotiation communication principles and maintain elite 0.01% researcher analytical standards throughout."""
+
+        try:
+            logger.info("Generating briefing with Claude...")
+            
+            response = self.anthropic_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=8000,
+                temperature=0.3,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+            
+            briefing_content = response.content[0].text
+            logger.info("Briefing generated successfully")
+            return briefing_content
+            
+        except Exception as e:
+            logger.error(f"Error generating briefing: {str(e)}")
+            raise
+
+    def send_email(self, briefing_content: str) -> bool:
+        """Send the briefing via email using SendGrid."""
+        today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        subject = f"Daily Content Discovery Briefing - {today} - 10 Premium Development Opportunities"
+        
+        # Convert markdown to HTML for better email formatting
+        html_content = self._markdown_to_html(briefing_content)
+        
+        message = Mail(
+            from_email=self.sender_email,
+            to_emails=[To(self.recipient_email)],
+            subject=subject,
+            html_content=html_content,
+            plain_text_content=briefing_content
+        )
+        
+        try:
+            logger.info("Sending email via SendGrid...")
+            response = self.sendgrid_client.send(message)
+            
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"Email sent successfully (status: {response.status_code})")
+                return True
+            else:
+                logger.error(f"Email send failed with status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error sending email: {str(e)}")
+            return False
+
+    def _markdown_to_html(self, markdown_content: str) -> str:
+        """Convert basic markdown formatting to HTML for email."""
+        html_content = markdown_content
+        
+        # Convert headers
+        html_content = html_content.replace('### ', '<h3>').replace('\n', '</h3>\n', 1) if '### ' in html_content else html_content
+        html_content = html_content.replace('## ', '<h2>').replace('\n', '</h2>\n', 1) if '## ' in html_content else html_content
+        html_content = html_content.replace('# ', '<h1>').replace('\n', '</h1>\n', 1) if '# ' in html_content else html_content
+        
+        # Convert bold text
+        import re
+        html_content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_content)
+        
+        # Convert line breaks
+        html_content = html_content.replace('\n\n', '<br><br>')
+        html_content = html_content.replace('\n', '<br>')
+        
+        # Add basic HTML structure
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        {html_content}
+        </body>
+        </html>
+        """
+        
+        return html_content
+
+    def run_daily_briefing(self) -> bool:
+        """Execute the complete daily briefing process."""
+        try:
+            logger.info("Starting daily briefing generation...")
+            
+            # Generate the briefing
+            briefing_content = self.generate_briefing()
+            
+            # Send via email
+            email_success = self.send_email(briefing_content)
+            
+            if email_success:
+                logger.info("Daily briefing completed successfully")
+                return True
+            else:
+                logger.error("Daily briefing failed at email delivery")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Daily briefing failed: {str(e)}")
+            return False
+
+def main():
+    """Main execution function."""
+    logger.info("="*50)
+    logger.info("DAILY TRUE CRIME BRIEFING AUTOMATION")
+    logger.info("="*50)
+    
+    try:
+        generator = TrueCrimeBriefingGenerator()
+        success = generator.run_daily_briefing()
+        
+        if success:
+            logger.info("✅ Daily briefing automation completed successfully")
+            sys.exit(0)
+        else:
+            logger.error("❌ Daily briefing automation failed")
+            sys.exit(1)
+            
+    except Exception as e:
+        logger.error(f"💥 Critical error in daily briefing automation: {str(e)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
