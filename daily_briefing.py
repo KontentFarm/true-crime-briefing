@@ -11,7 +11,7 @@ from email.mime.multipart import MIMEMultipart
 class TrueCrimeBriefingGenerator:
     def __init__(self):
     # Initialize Anthropic client with error handling for GitHub Actions
-    api_key = os.getenv('ANTHROPIC_API_KEY')
+        api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable is required")
         
