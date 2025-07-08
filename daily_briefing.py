@@ -25,17 +25,17 @@ class TrueCrimeBriefingGenerator:
         api_key=os.getenv('SENDGRID_API_KEY')
     )
     self.sender_email = os.getenv('SENDER_EMAIL')
-    self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
+self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
         
+def _validate_environment(self):
+"""Validate all required environment variables are present."""
+required_vars = ['ANTHROPIC_API_KEY', 'SENDGRID_API_KEY', 'SENDER_EMAIL']
+missing_vars = [var for var in required_vars if not os.getenv(var)]
 
-        
-    def get_research_prompt(self):
-        """Return the comprehensive True Crime Discovery Agent prompt"""
-        current_date = datetime.now().strftime("%B %d, %Y")
-        
-        return f"""
-# True Crime & Stranger Than Fiction Content Discovery Agent
+if missing_vars:        
+raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
+def get_research_prompt(self):
 ## ROLE DEFINITION
 You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories that have captured national/international attention for premium content development opportunities.
 
