@@ -1,5 +1,6 @@
 import anthropic
-import smtplib
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, To
 import os
 import requests
 import json
