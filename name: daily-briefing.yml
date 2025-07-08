@@ -1,4 +1,4 @@
-name: daily-briefing.yml
+name: Daily True Crime Briefing
 
 on:
   schedule:
