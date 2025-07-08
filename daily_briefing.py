@@ -25,7 +25,7 @@ class TrueCrimeBriefingGenerator:
         api_key=os.getenv('SENDGRID_API_KEY')
     )
     self.sender_email = os.getenv('SENDER_EMAIL')
-self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email) 
+        self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email) 
         self._validate_environment()
 
 def _validate_environment(self):
