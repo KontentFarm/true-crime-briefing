@@ -1,14 +1,9 @@
-.github/workflows/daily-briefing.yml
-yamlname: Daily True Crime Briefing
+name: Daily True Crime Briefing
 
 on:
   schedule:
-    # Runs daily at 9:00 AM PT 
-    # Note: GitHub Actions uses UTC time
-    # 9 AM PT = 4 PM UTC (Standard Time) / 5 PM UTC (Daylight Time)
-    # Using 5 PM UTC to cover Daylight Saving Time
     - cron: '0 17 * * *'
-  workflow_dispatch: # Allows manual triggering for testing
+  workflow_dispatch:
 
 jobs:
   send-briefing:
@@ -34,11 +29,3 @@ jobs:
         SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
         SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
       run: python daily_briefing.py
-    
-    - name: Upload logs (if needed for debugging)
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: briefing-logs
-        path: '*.log'
-        retention-days: 7
