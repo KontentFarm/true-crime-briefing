@@ -27,8 +27,7 @@ class TrueCrimeBriefingGenerator:
         self.sender_email = os.getenv('SENDER_EMAIL')
         self.recipient_email = os.getenv('RECIPIENT_EMAIL', self.sender_email)
         
-        # Validate required environment variables
-        self._validate_environment()
+
         
     def get_research_prompt(self):
         """Return the comprehensive True Crime Discovery Agent prompt"""
