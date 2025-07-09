@@ -221,38 +221,29 @@ class TrueCrimeBriefingGenerator:
             }
 
     def get_research_prompt(self):
-        """Generate a simple, direct content generation prompt"""
+        """Generate a simple discussion prompt about known cases"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
         return f"""
-Create a daily content discovery briefing for {current_date}. Generate exactly 10 true crime cases suitable for premium documentary development, using the format below. Focus on adjudicated cases with interesting developments.
+Please discuss 10 notable adjudicated true crime cases that would be suitable for documentary development. For each case, provide analysis in this format:
 
-Subject Line: Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities
+**Case #[1-10] - [Case Name]**
+- **Status:** Adjudicated/Resolved case
+- **Overview:** Brief factual summary
+- **Notable Aspects:** What makes it compelling
+- **Production Potential:** Why suitable for documentary
+- **Key Elements:** Available materials or angles
 
-Case #1 - TIER 1 - [Case Type] - "[Case Name]"
-- Case Type: Adjudicated w/New Development | Cold Case w/Fresh Evidence
-- Logline: [Compelling one-sentence description]
-- Key Details: [Names, locations, timeline]
-- Original Resolution: [How case was closed]
-- New Development: [Recent breakthrough or angle]
-- Source Coverage: [Major publications]
-- National Significance: [Why compelling for audiences]
-- Production Assets: [Available materials]
-- Competitive Verification: [Existing coverage check]
-- Development Recommendation: GO/NO-GO
-- Next Steps: [Specific actions]
+Focus on well-known resolved cases like:
+- Serial killer cases that have been closed
+- Cold cases solved through DNA evidence  
+- High-profile murder cases with interesting elements
+- Cases with strong narrative potential
 
-[Continue for cases 2-10]
+Please provide factual information about real cases that are already part of public record and have been extensively covered in media.
 
-Requirements:
-- Focus on adjudicated cases (legally resolved/closed)
-- Exclude ongoing investigations or active trials  
-- Exclude Innocence Project or wrongful conviction cases
-- Include mix of cold case breakthroughs and new developments
-- Focus on cases suitable for streaming/documentary production
-
-Generate the complete briefing now.
+Date: {current_date}
         """
         
     def run_research(self):
