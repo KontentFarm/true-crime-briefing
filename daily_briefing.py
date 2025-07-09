@@ -37,26 +37,128 @@ class TrueCrimeBriefingGenerator:
         if missing_vars:        
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
+import anthropic
+import os
+import requests
+import json
+import smtplib
+import logging
+from datetime import datetime, timedelta
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import time
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class TrueCrimeBriefingGenerator:
+    def __init__(self):
+        # Initialize Anthropic client with error handling for GitHub Actions
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+            
+        try:
+            self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+        except Exception as e:
+            logger.error(f"Failed to initialize Anthropic client: {e}")
+            raise
+            
+        self.sender_email = os.getenv('GMAIL_ADDRESS')
+        self.gmail_password = os.getenv('GMAIL_APP_PASSWORD')
+        self._validate_environment()
+
+    def _validate_environment(self):    
+        """Validate all required environment variables are present."""
+        required_vars = ['ANTHROPIC_API_KEY', 'GMAIL_ADDRESS', 'GMAIL_APP_PASSWORD']
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+        if missing_vars:        
+            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+    def search_web(self, query, max_results=10):
+        """Search the web for current information"""
+        try:
+            # Using DuckDuckGo search (free, no API key required)
+            import urllib.parse
+            import urllib.request
+            from bs4 import BeautifulSoup
+            
+            encoded_query = urllib.parse.quote_plus(query)
+            url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                html = response.read().decode('utf-8')
+            
+            soup = BeautifulSoup(html, 'html.parser')
+            results = []
+            
+            # Extract search results
+            for result in soup.find_all('a', class_='result__url')[:max_results]:
+                link = result.get('href', '')
+                if link.startswith('http'):
+                    results.append(link)
+            
+            return results[:max_results]
+            
+        except Exception as e:
+            print(f"Web search error: {str(e)}")
+            return []
+
+    def search_current_cases(self):
+        """Search for current true crime cases and developments"""
+        print("🔍 Searching for current true crime cases...")
+        
+        search_queries = [
+            "true crime new evidence 2025",
+            "cold case solved DNA 2025", 
+            "murder case new development",
+            "criminal conviction appeal 2025",
+            "forensic breakthrough crime",
+            "true crime documentary new",
+            "criminal case new witness",
+            "murder trial verdict 2025"
+        ]
+        
+        all_results = []
+        for query in search_queries:
+            print(f"🔍 Searching: {query}")
+            results = self.search_web(query, max_results=5)
+            all_results.extend(results)
+            time.sleep(1)  # Rate limiting
+        
+        return all_results
+
     def get_research_prompt(self):
-        """Generate the research prompt with current date"""
+        """Generate the research prompt with current date and search results"""
         current_date = datetime.now().strftime('%B %d, %Y')
+        
+        # Get current search results
+        search_results = self.search_current_cases()
+        search_results_text = "\n".join([f"- {url}" for url in search_results[:20]])
         
         return f"""
 ## ROLE DEFINITION
-You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories that have captured national/international attention for premium content development opportunities.
+You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories for premium content development opportunities.
+
+## CURRENT DATE: {current_date}
+
+## REAL-TIME SEARCH RESULTS
+I have conducted web searches for current true crime developments. Here are recent search results to analyze:
+
+{search_results_text}
 
 ## DAILY MISSION PARAMETERS
 
-**Primary Objective:** Discover and evaluate breaking or developing stories with high production potential for streaming, broadcast, and cable networks through compelling narratives, strong IP potential, and breakout format opportunities.
+**Primary Objective:** Discover and evaluate REAL breaking or developing stories with high production potential for streaming, broadcast, and cable networks.
 
-**Search Focus Areas:**
-- True crime cases with unusual circumstances or compelling characters
-- "Stranger than fiction" real-life events that defy conventional explanation
-- Stories generating significant media buzz and public fascination
-- Cases with unresolved mysteries or ongoing developments
-- Events with strong visual/documentary potential
-- Adjudicated cases with new, never-before-seen developments
-- Famous cold cases with fresh evidence, technology applications, or witness revelations
+**CRITICAL INSTRUCTION: You MUST provide 10 REAL cases from current news sources. NO hypothetical cases. NO explanations about limitations. ONLY real, current cases with actual details.**
 
 ## RESEARCH METHODOLOGY
 
@@ -66,119 +168,71 @@ You are an elite content discovery specialist operating at the level of the top 
 - New Yorker, Wired, NYMag, The Cut, Curbed
 - Time Magazine, Chicago Tribune, LA Times, The Daily Beast
 
-**Tier 2 Standard Sources:**
-- Major news outlets (AP, Reuters, BBC, CNN, Fox, ABC, CBS, NBC)
-- Local news networks across major markets
-- Court filing databases and legal proceedings
-- True crime communities (Reddit, specialized forums)
-- Social media trending topics and viral content
-- Appeals court filings and post-conviction developments
-- DNA database hits and forensic technology breakthroughs
-- Solved case archives and closed investigations
+**2. CASE REQUIREMENTS - REAL CASES ONLY**
 
-**2. EXPANDED CASE CATEGORIES**
-
-**FOCUS: ADJUDICATED CASES ONLY - NO ONGOING INVESTIGATIONS**
-
-**Adjudicated Cases with New Developments:**
+**Focus: ADJUDICATED CASES WITH NEW DEVELOPMENTS:**
 - Post-conviction appeals with new evidence (EXCLUDING wrongful conviction/exoneration cases)
 - Solved cases with new victim discoveries or co-conspirators
 - Cases where perpetrators reveal new information from prison
-- Family members or witnesses coming forward years later with new details
+- Family members or witnesses coming forward with new details
 - New forensic analysis of closed cases
-- Documentary crews uncovering previously unknown evidence in solved cases
+- Documentary crews uncovering previously unknown evidence
 
 **Famous Cold Cases with Fresh Angles:**
-- DNA technology breakthroughs (genetic genealogy, advanced testing) that provide new leads
-- New witness testimony or deathbed confessions in unsolved cases
+- DNA technology breakthroughs providing new leads
+- New witness testimony or deathbed confessions
 - Evidence re-examination with modern forensic techniques
-- Technology applications (facial recognition, cell tower analysis) revealing new information
-- Anniversary-driven renewed investigations that yield concrete developments
-- Social media campaigns uncovering new leads or witnesses
+- Technology applications revealing new information
 
 **3. MANDATORY COMPETITIVE LANDSCAPE VERIFICATION**
+Check against all major networks: Netflix, Amazon Prime, Hulu, HBO Max, Investigation Discovery, A&E, Dateline NBC, 48 Hours, 20/20, etc.
 
-**CRITICAL REQUIREMENT:** Every case must be thoroughly checked against all major streaming, cable, and broadcast networks to ensure the story has not been previously produced OR if previous coverage exists, the new developments provide sufficient fresh content for differentiated production.
+**4. DAILY OUTPUT REQUIREMENTS - 10 REAL CASES**
 
-**Networks/Platforms to Check:**
-- Streaming: Netflix, Amazon Prime, Hulu, Apple TV+, HBO Max, Paramount+, Disney+, Peacock, Discovery+
-- Cable: Investigation Discovery, A&E, Lifetime, History Channel, TLC, Oxygen, Vice, CNN, MSNBC, Fox News
-- Broadcast: CBS, NBC, ABC, Fox, PBS, Dateline NBC, 48 Hours, 20/20
-- Podcast Platforms: Spotify, Apple Podcasts, Serial Productions, Wondery, iHeartRadio
-- YouTube Channels: Major true crime creators and network channels
-
-**4. STORY QUALIFICATION CRITERIA**
-
-**Must Have Elements:**
-- Verified factual basis with credible sources
-- Compelling human interest angle
-- Visual/documentary production potential
-- National or international media coverage
-- Unique circumstances that separate from routine crime
-- NO EXISTING MAJOR PRODUCTION COVERAGE OR SUBSTANTIAL NEW DEVELOPMENTS
-
-**5. DAILY OUTPUT REQUIREMENTS**
-
-**10 CASES MINIMUM PER DAILY BRIEFING**
-**Distribution Breakdown:**
+**Distribution:**
 - 3-4 TIER 1 Cases (Immediate Development Potential)
-- 4-5 TIER 2 Cases (Short-term Monitoring/Development)
+- 4-5 TIER 2 Cases (Short-term Monitoring/Development)  
 - 2-3 TIER 3 Cases (Long-term Archive/Future Consideration)
-
-**Case Type Distribution:**
-- 6-7 Adjudicated Cases with New Developments
-- 3-4 Famous Cold Cases with Fresh Evidence/Technology
 
 **STRICT EXCLUSIONS:**
 - NO Innocence Project cases or wrongful conviction stories
 - NO ongoing investigations or active trials
-- NO cases still in the legal system
 - ONLY adjudicated (legally resolved) cases with new developments
+- NO hypothetical or example cases
 
-## SEARCH EXECUTION PROTOCOL
+## EXECUTION INSTRUCTIONS
 
-Execute today's daily briefing for {current_date}. Provide exactly 10 cases following all specified criteria, including:
-- Competitive landscape verification across all major networks/platforms
-- New development assessment for previously covered cases
-- Full analysis per research methodology
-- Email format as specified below
+**YOU MUST:**
+1. Analyze the search results provided above
+2. Research additional current true crime developments
+3. Provide exactly 10 REAL cases with full details
+4. Include competitive verification for each case
+5. Focus on cases with documentable new developments
+
+**DO NOT:**
+- Explain limitations about accessing real-time information
+- Provide hypothetical or example cases
+- Suggest alternative approaches
+- Give disclaimers about the exercise
 
 ## DAILY EMAIL FORMAT
 
 **Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
 
-**Opening Executive Summary:** 
-- Day's most compelling discoveries (2-3 sentences each)
-- Trending themes or patterns identified
-- Urgent development opportunities requiring immediate attention
-
-**Individual Case Analysis (10 Cases):**
+**Individual Case Analysis (10 REAL Cases):**
 
 **Case #[X] - [Tier Level] - [Case Type] - [Story Title]**
-- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
+- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence  
 - **Logline:** Compelling one-sentence hook
 - **Key Details:** Timeline, location, principals involved
 - **ADJUDICATION STATUS:** Confirm case is legally resolved/closed
 - **NEW DEVELOPMENT SUMMARY:** What makes this story fresh/different from prior coverage
 - **Production Assets:** Available footage, documents, interview subjects
-- **Legal Status:** Post-conviction status, clearance issues
-- **COMPETITIVE VERIFICATION:** Comprehensive check results across all platforms
-  - **Platforms Searched:** Complete list of networks/services checked
-  - **Previous Coverage Found:** Any existing production details
-  - **New Development Differentiation:** How new elements justify fresh production
-  - **Clearance Status:** CLEAR/NEW ANGLE APPROVED/FLAGGED/DISQUALIFIED
+- **COMPETITIVE VERIFICATION:** Check results across all platforms
 - **Development Recommendation:** GO/NO-GO with rationale
 - **Next Steps:** Specific actions required for advancement
 
-Execute this protocol with the analytical rigor of a federal investigation and the storytelling instincts of an award-winning documentarian. Focus on stories that will create compelling narratives, lean into fandoms, build strong IP, and deliver breakout format potential for premium content development.
-
-CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully researched cases meeting all specified criteria and analysis standards, including mandatory verification that either no major production coverage exists OR substantial new developments justify fresh production approach.
-
-**MANDATORY EXCLUSIONS:**
-- NO Innocence Project cases or wrongful conviction stories
-- NO ongoing investigations, active trials, or pending legal cases
-- ONLY adjudicated (legally closed/resolved) cases with substantial new developments
-- NO exoneration or "justice reform" narratives
+**DELIVER 10 REAL CASES NOW - NO EXPLANATIONS, NO LIMITATIONS, ONLY REAL CURRENT TRUE CRIME DEVELOPMENTS.**
         """
         
     def run_research(self):
