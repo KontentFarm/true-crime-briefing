@@ -223,20 +223,23 @@ class TrueCrimeBriefingGenerator:
     def get_research_prompt(self):
         """Generate research prompt with all user requirements"""
         from datetime import datetime
+        # Use actual current date - December 2024
         current_date = datetime.now().strftime('%B %d, %Y')
         
         return f"""
 CONTENT DISCOVERY BRIEFING - {current_date}
 
-I need you to provide 10 adjudicated true crime cases with NEW developments that meet these EXACT requirements:
+I need you to provide 10 adjudicated true crime cases with RECENT developments (2023-2024) that meet these EXACT requirements:
+
+CRITICAL: Use only REAL, RECENT cases from 2023-2024 with actual published articles. NO future information needed.
 
 MANDATORY REQUIREMENTS:
-1. REAL cases with actual article links from major publications
+1. REAL cases from 2023-2024 with actual article links from major publications
 2. Journalist name and contact information when available
 3. Cases that have resonated NATIONALLY (not local stories)
 4. ONLY written articles from major newspapers/magazines
 5. NO YouTube or local TV news
-6. Focus on cases with NEW developments (not just old cases)
+6. Focus on cases with RECENT developments (2023-2024)
 7. ADJUDICATED cases only (legally resolved/closed)
 8. NO Innocence Project or wrongful conviction cases
 9. Include competitive verification against existing documentaries
@@ -259,32 +262,28 @@ WHAT I DON'T WANT:
 - Cases that already have major documentaries (Golden State Killer, BTK, etc.)
 - Hypothetical or example cases
 - Cases without source articles and journalist names
+- Future developments or speculative information
+
+FOCUS ON: Recent developments in adjudicated cases from 2023-2024 that appeared in your premium publication list.
 
 FORMAT REQUIRED:
 
 **Case #[X] - [Tier] - [Case Type] - "[Actual Case Name]"**
-- **Source Article:** [Full URL to actual article]
-- **Publication:** [Major newspaper/magazine name]
+- **Source Article:** [Full URL to actual article from 2023-2024]
+- **Publication:** [Major newspaper/magazine name from approved list]
 - **Journalist:** [Reporter name and contact if available]
 - **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
 - **Logline:** One compelling sentence
 - **Key Details:** Real names, locations, timeline from article
 - **Adjudication Status:** How case was legally resolved
-- **NEW Development:** What's actually new from the article
+- **RECENT Development:** What's new from 2023-2024 articles
 - **National Significance:** Why this case has broad appeal beyond local interest
 - **Competitive Verification:** Check against Netflix, HBO, Investigation Discovery, etc.
 - **Development Recommendation:** GO/NO-GO with rationale
 
-DELIVER EXACTLY WHAT I'M ASKING FOR:
-- Real article links
-- Journalist names
-- NEW developments in adjudicated cases
-- National significance
-- Competitive verification
+Use your knowledge of RECENT (2023-2024) true crime developments that appeared in major publications. Focus on lesser-known adjudicated cases with new developments that haven't been heavily covered by major documentaries.
 
-Focus on finding RECENT developments in resolved cases that haven't been heavily covered by major documentaries yet.
-
-Begin with Case #1:
+Provide 10 cases from 2023-2024:
         """
         
     def run_research(self):
