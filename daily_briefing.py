@@ -204,6 +204,19 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         
         print("🔧 Setting up Gmail SMTP configuration...")
         
+        # Clean up the briefing content to remove problematic characters
+        import unicodedata
+        # Normalize and clean the content
+        clean_content = unicodedata.normalize('NFKD', briefing_content)
+        # Replace common problematic characters
+        clean_content = clean_content.replace('\xa0', ' ')  # Non-breaking space
+        clean_content = clean_content.replace('\u2013', '-')  # En dash
+        clean_content = clean_content.replace('\u2014', '--')  # Em dash
+        clean_content = clean_content.replace('\u2018', "'")  # Left single quote
+        clean_content = clean_content.replace('\u2019', "'")  # Right single quote
+        clean_content = clean_content.replace('\u201c', '"')  # Left double quote
+        clean_content = clean_content.replace('\u201d', '"')  # Right double quote
+        
         # Gmail SMTP configuration
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
@@ -217,16 +230,17 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         recipients = ["danny@kontentfarm.com", "rod@kontentfarm.com"]
         print(f"📫 Recipients: {', '.join(recipients)}")
         
-        # Create message
-        msg = MIMEMultipart()
+        # Create message with proper encoding
+        msg = MIMEMultipart('alternative')
         msg['From'] = sender_email
         msg['To'] = ", ".join(recipients)
         msg['Subject'] = f"Daily Content Discovery Briefing - {datetime.now().strftime('%B %d, %Y')} - 10 Premium Development Opportunities"
         
-        # Add body
-        msg.attach(MIMEText(briefing_content, 'plain'))
+        # Add body with explicit UTF-8 encoding
+        text_part = MIMEText(clean_content, 'plain', 'utf-8')
+        msg.attach(text_part)
         
-        print("📝 Email message created successfully")
+        print("📝 Email message created successfully with clean content")
         
         try:
             print("🌐 Connecting to Gmail SMTP server...")
