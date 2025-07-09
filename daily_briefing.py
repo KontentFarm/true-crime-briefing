@@ -77,150 +77,236 @@ class TrueCrimeBriefingGenerator:
         if missing_vars:        
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-    def search_web_advanced(self, query):
-        """Advanced web search with multiple sources"""
-        results = []
+    def search_premium_publications(self):
+        """Search specifically major newspapers and magazines for true crime stories"""
+        print("🔍 Searching premium publications for true crime stories...")
         
+        # Focus on major publications only
+        publication_searches = [
+            # Premium news sources with specific true crime terms
+            "site:nytimes.com cold case DNA solved",
+            "site:washingtonpost.com murder case new evidence", 
+            "site:wsj.com criminal investigation closed",
+            "site:latimes.com true crime arrest made",
+            "site:chicagotribune.com murder conviction DNA",
+            "site:atlanticmagazine.com criminal case",
+            "site:newyorker.com true crime investigation",
+            "site:vanityfair.com murder case documentary",
+            "site:time.com cold case breakthrough",
+            "site:thedailybeast.com criminal conviction"
+        ]
+        
+        all_articles = []
+        
+        for search_term in publication_searches:
+            try:
+                print(f"🔍 Searching: {search_term}")
+                
+                # Use Google Custom Search for premium sources
+                import urllib.parse
+                import urllib.request
+                from bs4 import BeautifulSoup
+                
+                encoded_query = urllib.parse.quote_plus(search_term)
+                search_url = f"https://www.google.com/search?q={encoded_query}&tbm=nws&num=10"
+                
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+                
+                req = urllib.request.Request(search_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    html = response.read().decode('utf-8')
+                
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # Extract news articles
+                for article in soup.find_all('div', class_='BNeawe vvjwJb AP7Wnd'):
+                    title = article.get_text().strip()
+                    
+                    # Find the parent link
+                    parent = article.find_parent('a')
+                    if parent and parent.get('href'):
+                        url = parent.get('href')
+                        if url.startswith('/url?q='):
+                            # Clean Google redirect URL
+                            url = urllib.parse.unquote(url.split('/url?q=')[1].split('&')[0])
+                        
+                        # Only include major publications
+                        major_pubs = [
+                            'nytimes.com', 'washingtonpost.com', 'wsj.com', 
+                            'latimes.com', 'chicagotribune.com', 'theatlantic.com',
+                            'newyorker.com', 'vanityfair.com', 'time.com',
+                            'thedailybeast.com', 'npr.org', 'cnn.com',
+                            'abcnews.go.com', 'nbcnews.com', 'cbsnews.com'
+                        ]
+                        
+                        if any(pub in url for pub in major_pubs):
+                            all_articles.append({
+                                'title': title,
+                                'url': url,
+                                'publication': next((pub for pub in major_pubs if pub in url), 'Unknown'),
+                                'search_term': search_term
+                            })
+                
+                time.sleep(2)  # Rate limiting
+                
+            except Exception as e:
+                print(f"Error searching {search_term}: {str(e)}")
+                continue
+        
+        print(f"📊 Found {len(all_articles)} articles from major publications")
+        return all_articles
+
+    def extract_article_details(self, url):
+        """Extract journalist and article details from major publication URLs"""
         try:
-            # Search Google News via RSS (more reliable)
-            import urllib.parse
             import urllib.request
             from bs4 import BeautifulSoup
-            import xml.etree.ElementTree as ET
-            
-            # Google News RSS search
-            encoded_query = urllib.parse.quote_plus(query)
-            news_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
             
-            req = urllib.request.Request(news_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=15) as response:
-                xml_content = response.read()
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                html = response.read().decode('utf-8')
             
-            root = ET.fromstring(xml_content)
-            for item in root.findall('.//item'):
-                title = item.find('title')
-                link = item.find('link')
-                description = item.find('description')
-                pub_date = item.find('pubDate')
-                
-                if title is not None and link is not None:
-                    results.append({
-                        'title': title.text,
-                        'url': link.text,
-                        'description': description.text if description is not None else '',
-                        'date': pub_date.text if pub_date is not None else ''
-                    })
+            soup = BeautifulSoup(html, 'html.parser')
             
-            return results[:10]
+            # Extract byline/author info (varies by publication)
+            author = None
+            date = None
+            
+            # Try common author selectors
+            author_selectors = [
+                '[data-module="Byline"]',
+                '.byline-author',
+                '.author-name', 
+                '.byline',
+                '[rel="author"]',
+                '.css-1baulvz',  # NYT specific
+                '.author'
+            ]
+            
+            for selector in author_selectors:
+                author_elem = soup.select_one(selector)
+                if author_elem:
+                    author = author_elem.get_text().strip()
+                    break
+            
+            # Try to find publish date
+            date_selectors = [
+                'time[datetime]',
+                '.publish-date',
+                '.date',
+                '.css-15w69y9'  # NYT specific
+            ]
+            
+            for selector in date_selectors:
+                date_elem = soup.select_one(selector)
+                if date_elem:
+                    date = date_elem.get('datetime') or date_elem.get_text().strip()
+                    break
+            
+            return {
+                'author': author or 'Author not found',
+                'date': date or 'Date not found'
+            }
             
         except Exception as e:
-            print(f"Advanced search error: {str(e)}")
-            return []
-
-    def search_current_cases(self):
-        """Comprehensive search for current true crime cases"""
-        print("🔍 Conducting comprehensive true crime search...")
-        
-        # More specific and current search terms
-        search_queries = [
-            "true crime cold case solved 2025",
-            "DNA evidence new arrest murder",
-            "criminal conviction overturned 2025", 
-            "murder case new evidence witness",
-            "serial killer identified DNA genealogy",
-            "cold case breakthrough forensics",
-            "true crime documentary development",
-            "murder trial verdict guilty 2025",
-            "criminal investigation closed solved",
-            "forensic evidence new technology crime"
-        ]
-        
-        all_results = []
-        for query in search_queries:
-            print(f"🔍 Searching: {query}")
-            results = self.search_web_advanced(query)
-            if results:
-                all_results.extend(results)
-                print(f"   Found {len(results)} results")
-            time.sleep(2)  # More conservative rate limiting
-        
-        print(f"📊 Total search results: {len(all_results)}")
-        return all_results
+            return {
+                'author': f'Error extracting author: {str(e)}',
+                'date': 'Error extracting date'
+            }
 
     def get_research_prompt(self):
-        """Generate the research prompt with extensive search results"""
+        """Generate research prompt with verified major publication articles"""
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Get comprehensive search results
-        search_results = self.search_current_cases()
+        # Get articles from major publications only
+        articles = self.search_premium_publications()
         
-        # Format search results with more detail
-        search_results_text = ""
-        for i, result in enumerate(search_results[:30], 1):
-            search_results_text += f"{i}. {result['title']}\n   URL: {result['url']}\n   Description: {result['description'][:200]}...\n   Date: {result['date']}\n\n"
+        if not articles:
+            return f"""
+## NO REAL ARTICLES FOUND
+Unable to find current true crime articles from major publications. 
+The briefing system requires access to actual articles from:
+- The New York Times, Washington Post, Wall Street Journal
+- LA Times, Chicago Tribune, The Atlantic, New Yorker
+- Vanity Fair, Time Magazine, The Daily Beast
+
+Without real articles, cannot provide genuine case briefings.
+Date: {current_date}
+            """
+        
+        # Format articles with full details
+        articles_text = ""
+        for i, article in enumerate(articles[:20], 1):
+            # Get author details for each article
+            details = self.extract_article_details(article['url'])
+            
+            articles_text += f"""
+ARTICLE #{i}:
+Title: {article['title']}
+Publication: {article['publication']}
+URL: {article['url']}
+Author: {details['author']}
+Date: {details['date']}
+Search Context: {article['search_term']}
+---
+"""
         
         return f"""
-## ROLE DEFINITION
-You are an elite content discovery specialist. You MUST analyze these REAL search results and provide 10 ACTUAL cases.
+## ELITE CONTENT DISCOVERY BRIEFING
+## Current Date: {current_date}
 
-## CURRENT DATE: {current_date}
+## REAL ARTICLES FROM MAJOR PUBLICATIONS
+{articles_text}
 
-## REAL SEARCH RESULTS FROM CURRENT NEWS
-{search_results_text}
+## CRITICAL REQUIREMENTS
 
-## CRITICAL INSTRUCTIONS - READ CAREFULLY
+**YOU MUST ANALYZE ONLY THE REAL ARTICLES ABOVE AND:**
 
-**YOU MUST:**
-1. Analyze the search results above - these are REAL current news stories
-2. Select 10 cases that meet the criteria from these REAL results
-3. Provide full analysis for each REAL case
-4. NO explanations about limitations or access issues
-5. NO disclaimers about hypothetical nature
-6. ONLY work with the REAL information provided above
+1. **Select 10 cases** that are ADJUDICATED (legally resolved/closed) with new developments
+2. **Include the ACTUAL ARTICLE LINK** for each case
+3. **Include the JOURNALIST NAME** and publication for each case  
+4. **Focus on NATIONALLY SIGNIFICANT** cases that have major media coverage
+5. **Exclude local TV news** - only written articles from major publications
+6. **Provide REAL case names** and details from the actual articles
 
-**CASE SELECTION CRITERIA:**
-- Focus on adjudicated cases with new developments
-- Cold cases with DNA breakthroughs
-- Murder cases with new evidence
-- Cases where perpetrators have been convicted/sentenced
-- NO ongoing trials or active investigations
-
-**STRICT EXCLUSIONS:**
-- NO Innocence Project or wrongful conviction cases
-- NO ongoing investigations
-- NO cases still in active litigation
+## STRICT FOCUS CRITERIA
+- **ONLY adjudicated cases** (no ongoing trials/investigations)
+- **Cases with national resonance** (not local crime stories)
+- **New developments** in resolved cases (new evidence, appeals, etc.)
+- **NO Innocence Project** or wrongful conviction cases
+- **NO YouTube or local TV** sources
 
 ## OUTPUT FORMAT
 
 **Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
 
-**Provide exactly 10 cases in this format:**
+**For each case provide:**
 
-**Case #[1-10] - [TIER 1/2/3] - [Case Type] - "[Case Name]"**
+**Case #[X] - [TIER 1/2/3] - [Case Type] - "[ACTUAL CASE NAME FROM ARTICLE]"**
+- **Source Article:** [FULL URL from above]
+- **Publication:** [Publication name] 
+- **Journalist:** [Author name from article]
 - **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
 - **Logline:** One compelling sentence about the case
-- **Key Details:** Timeline, location, victim/perpetrator names from search results
-- **ADJUDICATION STATUS:** Case resolution status
-- **NEW DEVELOPMENT SUMMARY:** What's new about this case
-- **Production Assets:** Potential interview subjects, documents, footage
-- **COMPETITIVE VERIFICATION:** Check against major networks/platforms
+- **Key Details:** REAL names, locations, timeline from the article
+- **ADJUDICATION STATUS:** How case was legally resolved
+- **NEW DEVELOPMENT:** What's new from the article
+- **National Significance:** Why this case has broad appeal
+- **Production Assets:** Potential interviews, documents, footage
+- **Competitive Verification:** Check against major networks
 - **Development Recommendation:** GO/NO-GO with rationale
-- **Next Steps:** Specific production actions
 
-**MANDATORY REQUIREMENTS:**
-- Use ONLY the real search results provided above
-- Extract actual case names, locations, and details from the news stories
-- Provide 10 complete case analyses
-- Focus on cases suitable for documentary production
-- NO explanations about limitations
+**MANDATORY: Only use cases from the REAL ARTICLES listed above. Include the actual article URL and journalist name for each case.**
 
-**START WITH CASE #1 AND CONTINUE THROUGH CASE #10. USE THE REAL SEARCH RESULTS ABOVE.**
+**If fewer than 10 qualifying cases exist in the articles, provide only the real ones found.**
 
-**BEGIN YOUR ANALYSIS NOW:**
+**BEGIN ANALYSIS OF REAL ARTICLES NOW:**
         """
         
     def run_research(self):
