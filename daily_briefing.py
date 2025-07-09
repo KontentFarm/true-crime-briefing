@@ -221,67 +221,38 @@ class TrueCrimeBriefingGenerator:
             }
 
     def get_research_prompt(self):
-        """Generate research prompt focusing on known cases with recent developments"""
-        # Use actual current date
+        """Generate a simple, direct content generation prompt"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
         return f"""
-## CONTENT DISCOVERY BRIEFING REQUEST
-Date: {current_date}
+Create a daily content discovery briefing for {current_date}. Generate exactly 10 true crime cases suitable for premium documentary development, using the format below. Focus on adjudicated cases with interesting developments.
 
-## ASSIGNMENT
-You are a content discovery specialist. Using your knowledge of true crime cases and recent developments that occurred through early 2025, identify 10 adjudicated cases that have had significant new developments and are suitable for premium documentary/streaming development.
+Subject Line: Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities
 
-## FOCUS REQUIREMENTS
-- Use cases you know about from major news sources and publications
-- Focus on ADJUDICATED cases (legally resolved/closed) that have had NEW developments  
-- Include cases with national significance that received major media coverage
-- Exclude ongoing investigations, active trials, or pending cases
+Case #1 - TIER 1 - [Case Type] - "[Case Name]"
+- Case Type: Adjudicated w/New Development | Cold Case w/Fresh Evidence
+- Logline: [Compelling one-sentence description]
+- Key Details: [Names, locations, timeline]
+- Original Resolution: [How case was closed]
+- New Development: [Recent breakthrough or angle]
+- Source Coverage: [Major publications]
+- National Significance: [Why compelling for audiences]
+- Production Assets: [Available materials]
+- Competitive Verification: [Existing coverage check]
+- Development Recommendation: GO/NO-GO
+- Next Steps: [Specific actions]
+
+[Continue for cases 2-10]
+
+Requirements:
+- Focus on adjudicated cases (legally resolved/closed)
+- Exclude ongoing investigations or active trials  
 - Exclude Innocence Project or wrongful conviction cases
-- Focus on cases suitable for premium content development
+- Include mix of cold case breakthroughs and new developments
+- Focus on cases suitable for streaming/documentary production
 
-## CASE CATEGORIES TO CONSIDER
-- Cold cases solved through DNA evidence or new technology
-- Murder cases with new evidence emerging post-conviction
-- Cases where perpetrators have made new confessions or revelations
-- High-profile cases with new witness testimony or evidence
-- Cases where new victims or co-conspirators have been identified
-- Serial killer cases with new developments or connections
-
-## REQUIRED OUTPUT FORMAT
-
-**Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
-
-**Provide 10 cases in this format:**
-
-**Case #[X] - [TIER 1/2/3] - [Case Type] - "[Actual Case Name]"**
-- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
-- **Logline:** Compelling one-sentence description
-- **Key Details:** Real names, locations, timeline
-- **Original Resolution:** How case was originally closed/adjudicated
-- **New Development:** Recent breakthrough, evidence, or revelation
-- **Source Coverage:** Major publications that covered the development
-- **National Significance:** Why case has broad documentary appeal
-- **Production Assets:** Available materials (interviews, footage, documents)
-- **Competitive Verification:** Check existing documentary/series coverage
-- **Development Recommendation:** GO/NO-GO with rationale
-- **Next Steps:** Specific actions for development
-
-## EXAMPLES OF CASE TYPES TO INCLUDE
-- Golden State Killer case developments
-- Zodiac Killer investigation updates  
-- BTK killer new revelations
-- Israel Keyes case new discoveries
-- Gacy victim identifications
-- Bundy case new evidence
-- Cold case DNA breakthroughs
-- Serial killer new connections
-
-## INSTRUCTIONS
-Draw from your knowledge of real cases and developments. Provide specific case names, real locations, actual people involved, and cite major news sources when possible. Focus on cases that would make compelling premium content.
-
-Begin briefing with 10 cases:
+Generate the complete briefing now.
         """
         
     def run_research(self):
