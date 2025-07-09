@@ -221,48 +221,35 @@ class TrueCrimeBriefingGenerator:
             }
 
     def get_research_prompt(self):
-        """Generate a direct briefing creation prompt"""
+        """Generate a simple, direct prompt for real cases"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
         return f"""
-You are a content discovery specialist who has completed research on adjudicated true crime cases from the 1990s onward with recent developments. Create a professional briefing for {current_date}.
+Create a content discovery briefing for {current_date}.
 
-Format the briefing exactly as shown below, using cases you know about that meet these criteria:
-- Adjudicated cases (legally resolved/closed) from 1990s onward  
-- Cases with recent developments or new angles
-- National significance (not local crime)
-- Exclude Innocence Project/wrongful conviction cases
-- Focus on cases suitable for premium documentary development
+Provide 10 real adjudicated true crime cases from the 1990s onward that would be suitable for documentary development. Use only cases you know about from your training data. Focus on cases that are legally resolved but may have interesting production potential.
 
-Subject Line: Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities
+Requirements:
+- Real cases only (no fictional developments)
+- Adjudicated/closed cases from 1990s onward
+- National significance
+- Exclude Innocence Project cases
+- Include variety of case types
 
-**Case #1 - TIER 1 - [Case Type] - "[Case Name]"**
-- **Source Coverage:** [Type of major publication that covered this]
-- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence  
-- **Logline:** [Compelling one-sentence description]
-- **Key Details:** [Real names, locations, timeline]
-- **Original Case Date:** [1990s onward]
-- **Adjudication Status:** [How case was resolved]
-- **Recent Development:** [New evidence, revelations, or angles]
-- **National Significance:** [Why compelling for broad audiences]
-- **Production Assets:** [Available materials for documentary]
-- **Competitive Status:** [Level of existing coverage]
-- **Development Recommendation:** GO - [Brief rationale]
-- **Next Steps:** [Specific development actions]
+Format each case as:
 
-**Case #2 - [Continue same format]**
+**Case #[X] - [Case Name]**
+- **Case Type:** [Type of case]
+- **Timeline:** [When crimes occurred and when resolved]
+- **Key Details:** [Basic facts]
+- **Resolution:** [How case was closed]
+- **Production Potential:** [Why interesting for documentary]
+- **Available Materials:** [Potential interview subjects, archives]
+- **Competitive Landscape:** [Level of existing coverage]
+- **Recommendation:** [Development assessment]
 
-[Continue through Case #10]
-
-Create 10 cases total focusing on:
-- Cases from 1990s-present with interesting developments
-- Mix of cold case breakthroughs and post-conviction revelations  
-- Cases suitable for premium streaming/documentary development
-- Variety of crime types and geographic locations
-- Cases that haven't been overdone by major networks
-
-Begin with Case #1:
+Begin with Case #1 and continue through Case #10. Use real cases from your knowledge base.
         """
         
     def run_research(self):
