@@ -221,90 +221,67 @@ class TrueCrimeBriefingGenerator:
             }
 
     def get_research_prompt(self):
-        """Generate research prompt with verified major publication articles"""
-        # Use ACTUAL current date, not future date
+        """Generate research prompt focusing on known cases with recent developments"""
+        # Use actual current date
+        from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Get articles from major publications only
-        articles = self.search_premium_publications()
-        
-        if not articles:
-            return f"""
-## RESEARCH BRIEFING REQUEST
-Date: {current_date}
-
-Search major publications for recent true crime developments and provide analysis of 10 adjudicated cases with new developments. Focus on cases suitable for premium content development.
-
-Use your knowledge of recent true crime cases and developments from major news sources to identify compelling stories.
-
-## REQUIREMENTS
-- 10 adjudicated cases with new developments
-- Focus on cases with national significance  
-- Include source publication information
-- Exclude ongoing investigations
-- Exclude Innocence Project cases
-
-Provide standard case analysis format with development recommendations.
-            """
-        
-        # Format articles with full details
-        articles_text = ""
-        for i, article in enumerate(articles[:20], 1):
-            # Get author details for each article
-            details = self.extract_article_details(article['url'])
-            
-            articles_text += f"""
-ARTICLE #{i}:
-Title: {article['title']}
-Publication: {article['publication']}
-URL: {article['url']}
-Author: {details['author']}
-Date: {details['date']}
----
-"""
-        
         return f"""
-## CONTENT DISCOVERY RESEARCH REQUEST
+## CONTENT DISCOVERY BRIEFING REQUEST
 Date: {current_date}
-
-## AVAILABLE SOURCE ARTICLES
-{articles_text}
 
 ## ASSIGNMENT
-Analyze the above articles and identify 10 adjudicated true crime cases with new developments suitable for premium content development.
+You are a content discovery specialist. Using your knowledge of true crime cases and recent developments that occurred through early 2025, identify 10 adjudicated cases that have had significant new developments and are suitable for premium documentary/streaming development.
 
-## SELECTION CRITERIA
-- Adjudicated cases (legally resolved/closed) with recent new developments
-- Cases with national significance and broad appeal
-- New evidence, appeals, or fresh revelations in closed cases
-- Exclude ongoing investigations and trials
+## FOCUS REQUIREMENTS
+- Use cases you know about from major news sources and publications
+- Focus on ADJUDICATED cases (legally resolved/closed) that have had NEW developments  
+- Include cases with national significance that received major media coverage
+- Exclude ongoing investigations, active trials, or pending cases
 - Exclude Innocence Project or wrongful conviction cases
-- Focus on cases suitable for documentary/streaming development
+- Focus on cases suitable for premium content development
+
+## CASE CATEGORIES TO CONSIDER
+- Cold cases solved through DNA evidence or new technology
+- Murder cases with new evidence emerging post-conviction
+- Cases where perpetrators have made new confessions or revelations
+- High-profile cases with new witness testimony or evidence
+- Cases where new victims or co-conspirators have been identified
+- Serial killer cases with new developments or connections
 
 ## REQUIRED OUTPUT FORMAT
 
 **Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
 
-**For each qualifying case:**
+**Provide 10 cases in this format:**
 
-**Case #[X] - [TIER 1/2/3] - [Case Type] - "[Case Name]"**
-- **Source Article:** [URL if available]
-- **Publication:** [Publication name]
-- **Journalist:** [Author name if available]
+**Case #[X] - [TIER 1/2/3] - [Case Type] - "[Actual Case Name]"**
 - **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
 - **Logline:** Compelling one-sentence description
-- **Key Details:** Names, locations, timeline
-- **Adjudication Status:** How case was resolved
-- **New Development:** Recent breakthrough or revelation
-- **National Significance:** Why case has broad appeal
-- **Production Assets:** Available materials for development
-- **Competitive Verification:** Existing coverage check
+- **Key Details:** Real names, locations, timeline
+- **Original Resolution:** How case was originally closed/adjudicated
+- **New Development:** Recent breakthrough, evidence, or revelation
+- **Source Coverage:** Major publications that covered the development
+- **National Significance:** Why case has broad documentary appeal
+- **Production Assets:** Available materials (interviews, footage, documents)
+- **Competitive Verification:** Check existing documentary/series coverage
 - **Development Recommendation:** GO/NO-GO with rationale
+- **Next Steps:** Specific actions for development
+
+## EXAMPLES OF CASE TYPES TO INCLUDE
+- Golden State Killer case developments
+- Zodiac Killer investigation updates  
+- BTK killer new revelations
+- Israel Keyes case new discoveries
+- Gacy victim identifications
+- Bundy case new evidence
+- Cold case DNA breakthroughs
+- Serial killer new connections
 
 ## INSTRUCTIONS
-Review the source articles above and provide analysis of qualifying cases. If fewer than 10 cases meet criteria, provide analysis of all qualifying cases found.
+Draw from your knowledge of real cases and developments. Provide specific case names, real locations, actual people involved, and cite major news sources when possible. Focus on cases that would make compelling premium content.
 
-Begin case analysis:
+Begin briefing with 10 cases:
         """
         
     def run_research(self):
