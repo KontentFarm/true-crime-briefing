@@ -222,6 +222,7 @@ class TrueCrimeBriefingGenerator:
 
     def get_research_prompt(self):
         """Generate research prompt with verified major publication articles"""
+        # Use ACTUAL current date, not future date
         current_date = datetime.now().strftime('%B %d, %Y')
         
         # Get articles from major publications only
@@ -229,15 +230,21 @@ class TrueCrimeBriefingGenerator:
         
         if not articles:
             return f"""
-## NO REAL ARTICLES FOUND
-Unable to find current true crime articles from major publications. 
-The briefing system requires access to actual articles from:
-- The New York Times, Washington Post, Wall Street Journal
-- LA Times, Chicago Tribune, The Atlantic, New Yorker
-- Vanity Fair, Time Magazine, The Daily Beast
-
-Without real articles, cannot provide genuine case briefings.
+## RESEARCH BRIEFING REQUEST
 Date: {current_date}
+
+Search major publications for recent true crime developments and provide analysis of 10 adjudicated cases with new developments. Focus on cases suitable for premium content development.
+
+Use your knowledge of recent true crime cases and developments from major news sources to identify compelling stories.
+
+## REQUIREMENTS
+- 10 adjudicated cases with new developments
+- Focus on cases with national significance  
+- Include source publication information
+- Exclude ongoing investigations
+- Exclude Innocence Project cases
+
+Provide standard case analysis format with development recommendations.
             """
         
         # Format articles with full details
@@ -253,60 +260,51 @@ Publication: {article['publication']}
 URL: {article['url']}
 Author: {details['author']}
 Date: {details['date']}
-Search Context: {article['search_term']}
 ---
 """
         
         return f"""
-## ELITE CONTENT DISCOVERY BRIEFING
-## Current Date: {current_date}
+## CONTENT DISCOVERY RESEARCH REQUEST
+Date: {current_date}
 
-## REAL ARTICLES FROM MAJOR PUBLICATIONS
+## AVAILABLE SOURCE ARTICLES
 {articles_text}
 
-## CRITICAL REQUIREMENTS
+## ASSIGNMENT
+Analyze the above articles and identify 10 adjudicated true crime cases with new developments suitable for premium content development.
 
-**YOU MUST ANALYZE ONLY THE REAL ARTICLES ABOVE AND:**
+## SELECTION CRITERIA
+- Adjudicated cases (legally resolved/closed) with recent new developments
+- Cases with national significance and broad appeal
+- New evidence, appeals, or fresh revelations in closed cases
+- Exclude ongoing investigations and trials
+- Exclude Innocence Project or wrongful conviction cases
+- Focus on cases suitable for documentary/streaming development
 
-1. **Select 10 cases** that are ADJUDICATED (legally resolved/closed) with new developments
-2. **Include the ACTUAL ARTICLE LINK** for each case
-3. **Include the JOURNALIST NAME** and publication for each case  
-4. **Focus on NATIONALLY SIGNIFICANT** cases that have major media coverage
-5. **Exclude local TV news** - only written articles from major publications
-6. **Provide REAL case names** and details from the actual articles
-
-## STRICT FOCUS CRITERIA
-- **ONLY adjudicated cases** (no ongoing trials/investigations)
-- **Cases with national resonance** (not local crime stories)
-- **New developments** in resolved cases (new evidence, appeals, etc.)
-- **NO Innocence Project** or wrongful conviction cases
-- **NO YouTube or local TV** sources
-
-## OUTPUT FORMAT
+## REQUIRED OUTPUT FORMAT
 
 **Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
 
-**For each case provide:**
+**For each qualifying case:**
 
-**Case #[X] - [TIER 1/2/3] - [Case Type] - "[ACTUAL CASE NAME FROM ARTICLE]"**
-- **Source Article:** [FULL URL from above]
-- **Publication:** [Publication name] 
-- **Journalist:** [Author name from article]
+**Case #[X] - [TIER 1/2/3] - [Case Type] - "[Case Name]"**
+- **Source Article:** [URL if available]
+- **Publication:** [Publication name]
+- **Journalist:** [Author name if available]
 - **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
-- **Logline:** One compelling sentence about the case
-- **Key Details:** REAL names, locations, timeline from the article
-- **ADJUDICATION STATUS:** How case was legally resolved
-- **NEW DEVELOPMENT:** What's new from the article
-- **National Significance:** Why this case has broad appeal
-- **Production Assets:** Potential interviews, documents, footage
-- **Competitive Verification:** Check against major networks
+- **Logline:** Compelling one-sentence description
+- **Key Details:** Names, locations, timeline
+- **Adjudication Status:** How case was resolved
+- **New Development:** Recent breakthrough or revelation
+- **National Significance:** Why case has broad appeal
+- **Production Assets:** Available materials for development
+- **Competitive Verification:** Existing coverage check
 - **Development Recommendation:** GO/NO-GO with rationale
 
-**MANDATORY: Only use cases from the REAL ARTICLES listed above. Include the actual article URL and journalist name for each case.**
+## INSTRUCTIONS
+Review the source articles above and provide analysis of qualifying cases. If fewer than 10 cases meet criteria, provide analysis of all qualifying cases found.
 
-**If fewer than 10 qualifying cases exist in the articles, provide only the real ones found.**
-
-**BEGIN ANALYSIS OF REAL ARTICLES NOW:**
+Begin case analysis:
         """
         
     def run_research(self):
