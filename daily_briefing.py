@@ -221,29 +221,70 @@ class TrueCrimeBriefingGenerator:
             }
 
     def get_research_prompt(self):
-        """Generate a simple discussion prompt about known cases"""
+        """Generate research prompt with all user requirements"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
         return f"""
-Please discuss 10 notable adjudicated true crime cases that would be suitable for documentary development. For each case, provide analysis in this format:
+CONTENT DISCOVERY BRIEFING - {current_date}
 
-**Case #[1-10] - [Case Name]**
-- **Status:** Adjudicated/Resolved case
-- **Overview:** Brief factual summary
-- **Notable Aspects:** What makes it compelling
-- **Production Potential:** Why suitable for documentary
-- **Key Elements:** Available materials or angles
+I need you to provide 10 adjudicated true crime cases with NEW developments that meet these EXACT requirements:
 
-Focus on well-known resolved cases like:
-- Serial killer cases that have been closed
-- Cold cases solved through DNA evidence  
-- High-profile murder cases with interesting elements
-- Cases with strong narrative potential
+MANDATORY REQUIREMENTS:
+1. REAL cases with actual article links from major publications
+2. Journalist name and contact information when available
+3. Cases that have resonated NATIONALLY (not local stories)
+4. ONLY written articles from major newspapers/magazines
+5. NO YouTube or local TV news
+6. Focus on cases with NEW developments (not just old cases)
+7. ADJUDICATED cases only (legally resolved/closed)
+8. NO Innocence Project or wrongful conviction cases
+9. Include competitive verification against existing documentaries
 
-Please provide factual information about real cases that are already part of public record and have been extensively covered in media.
+PREMIUM SOURCES YOU HAVE ACCESS TO:
+- The Atlantic, Vanity Fair, New Yorker, Wired
+- NYMag, The Cut, Curbed  
+- The New York Times, Time Magazine
+- Chicago Tribune, LA Times, Washington Post, The Daily Beast
+- Rolling Stone, Air Mail, The Atavist
+- Philadelphia Inquirer, Bloomberg, Harper's, Business Insider
+- Wall Street Journal, Boston Globe, Baltimore Banner
+- Town & Country, Esquire, High Country News, Texas Monthly
+- Outside Mag, SF Chronicle, Scientific American
+- Oregonian, Sun Sentinel
+- NO local news, NO YouTube, NO basic crime coverage
 
-Date: {current_date}
+WHAT I DON'T WANT:
+- Famous serial killer cases everyone knows about
+- Cases that already have major documentaries (Golden State Killer, BTK, etc.)
+- Hypothetical or example cases
+- Cases without source articles and journalist names
+
+FORMAT REQUIRED:
+
+**Case #[X] - [Tier] - [Case Type] - "[Actual Case Name]"**
+- **Source Article:** [Full URL to actual article]
+- **Publication:** [Major newspaper/magazine name]
+- **Journalist:** [Reporter name and contact if available]
+- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
+- **Logline:** One compelling sentence
+- **Key Details:** Real names, locations, timeline from article
+- **Adjudication Status:** How case was legally resolved
+- **NEW Development:** What's actually new from the article
+- **National Significance:** Why this case has broad appeal beyond local interest
+- **Competitive Verification:** Check against Netflix, HBO, Investigation Discovery, etc.
+- **Development Recommendation:** GO/NO-GO with rationale
+
+DELIVER EXACTLY WHAT I'M ASKING FOR:
+- Real article links
+- Journalist names
+- NEW developments in adjudicated cases
+- National significance
+- Competitive verification
+
+Focus on finding RECENT developments in resolved cases that haven't been heavily covered by major documentaries yet.
+
+Begin with Case #1:
         """
         
     def run_research(self):
