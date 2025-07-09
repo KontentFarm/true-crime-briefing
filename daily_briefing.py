@@ -204,44 +204,30 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         
         print("🔧 Setting up Gmail SMTP configuration...")
         
-        # NUCLEAR-LEVEL character cleaning
-        def clean_text_aggressive(text):
-            """Aggressively clean ALL non-ASCII characters"""
+        # ULTIMATE character cleaning
+        def nuclear_clean(text):
+            """Remove ALL non-ASCII characters aggressively"""
             if not text:
                 return ""
-                
-            # Convert to string
-            text = str(text)
             
-            print(f"🔍 Original text sample: {repr(text[:50])}")
-            
-            # Step 1: Remove ALL characters above ASCII 127
-            ascii_only = ""
-            for char in text:
-                if ord(char) < 128:
-                    ascii_only += char
+            # Convert to string and filter out EVERYTHING above ASCII 127
+            result = ""
+            for char in str(text):
+                if ord(char) < 128 and ord(char) != 160:  # 160 is \xa0
+                    result += char
                 else:
-                    print(f"🚨 Found problematic char: {repr(char)} (ord: {ord(char)})")
-                    ascii_only += " "  # Replace with space
+                    result += " "  # Replace with space
             
-            print(f"🔍 After ASCII filter: {repr(ascii_only[:50])}")
-            
-            # Step 2: Replace any remaining problem patterns
-            ascii_only = ascii_only.replace('\xa0', ' ')  # Just in case
-            ascii_only = ascii_only.replace('\u00a0', ' ')  # Just in case
-            
-            # Step 3: Clean up multiple spaces
+            # Clean up multiple spaces
             import re
-            ascii_only = re.sub(r'\s+', ' ', ascii_only)
-            
-            return ascii_only.strip()
+            result = re.sub(r'\s+', ' ', result).strip()
+            return result
         
-        # Clean the content with nuclear approach
-        print("🧹 Starting aggressive content cleaning...")
-        clean_content = clean_text_aggressive(briefing_content)
-        print(f"📝 Content cleaned: {len(briefing_content)} -> {len(clean_content)} characters")
+        # Clean everything
+        clean_content = nuclear_clean(briefing_content)
+        print(f"📝 Content aggressively cleaned: {len(briefing_content)} -> {len(clean_content)} characters")
         
-        # Gmail SMTP configuration
+        # Gmail configuration
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
         sender_email = os.environ.get("GMAIL_ADDRESS")
@@ -250,37 +236,57 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         print(f"📧 Sender email: {sender_email}")
         print(f"🔑 Gmail App Password present: {'Yes' if sender_password else 'No'}")
         
-        # Recipients
         recipients = ["danny@kontentfarm.com", "rod@kontentfarm.com"]
         print(f"📫 Recipients: {', '.join(recipients)}")
         
-        # Create ultra-clean subject
-        subject = "Daily Content Discovery Briefing - 10 Premium Development Opportunities"
-        clean_subject = clean_text_aggressive(subject)
-        print(f"📧 Clean subject: {repr(clean_subject)}")
+        # Create the SIMPLEST possible email
+        subject = "Daily True Crime Briefing - Premium Development Opportunities"
+        clean_subject = nuclear_clean(subject)
         
-        # Create message with ONLY ASCII
+        # Ultra-simple email body
+        simple_body = f"""Subject: {clean_subject}
+From: {sender_email}
+To: {', '.join(recipients)}
+
+DAILY TRUE CRIME BRIEFING
+
+{clean_content}
+
+---
+Automated Briefing System
+"""
+        
+        # Final nuclear cleaning of entire email
+        final_email = nuclear_clean(simple_body)
+        
+        print(f"📧 Final email length: {len(final_email)} characters")
+        print(f"🔍 Email starts with: {repr(final_email[:50])}")
+        
+        # Check for any remaining problematic characters
+        bad_chars = []
+        for i, char in enumerate(final_email):
+            if ord(char) >= 128:
+                bad_chars.append(f"Position {i}: {repr(char)} (ord: {ord(char)})")
+        
+        if bad_chars:
+            print(f"🚨 Found {len(bad_chars)} bad characters:")
+            for bad in bad_chars[:5]:  # Show first 5
+                print(f"   {bad}")
+        else:
+            print("✅ No problematic characters found!")
+        
         try:
-            print("📝 Creating email message...")
-            
-            # Use the simplest possible approach
-            email_body = f"From: {sender_email}\r\nTo: {', '.join(recipients)}\r\nSubject: {clean_subject}\r\n\r\n{clean_content}"
-            
-            # Final ASCII check
-            final_clean = clean_text_aggressive(email_body)
-            print(f"📧 Final email size: {len(final_clean)} characters")
-            print(f"🔍 Email preview: {repr(final_clean[:100])}")
-            
             print("🌐 Connecting to Gmail SMTP server...")
             server = smtplib.SMTP(smtp_server, smtp_port)
             print("🔐 Starting TLS encryption...")
             server.starttls()
             print("🔑 Logging in to Gmail...")
             server.login(sender_email, sender_password)
-            print("📤 Sending email message...")
+            print("📤 Sending ultra-simple email...")
             
-            # Send with raw ASCII string
-            server.sendmail(sender_email, recipients, final_clean.encode('ascii', 'ignore').decode('ascii'))
+            # Send as pure ASCII bytes
+            ascii_email = final_email.encode('ascii', 'replace').decode('ascii')
+            server.sendmail(sender_email, recipients, ascii_email)
             server.quit()
             
             print("✅ Email sent successfully via Gmail!")
@@ -288,18 +294,17 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             return True
             
         except Exception as e:
-            print(f"❌ Error sending email via Gmail: {str(e)}")
-            logger.error(f"Error sending email via Gmail: {str(e)}")
-            
-            # Show detailed debugging
+            print(f"❌ Error sending email: {str(e)}")
             print(f"🔍 Error type: {type(e)}")
-            print(f"🔍 Clean content sample: {repr(clean_content[:200])}")
             
-            # Try to identify the exact problematic character
-            for i, char in enumerate(final_clean):
-                if ord(char) >= 128:
-                    print(f"🚨 Found bad char at position {i}: {repr(char)} (ord: {ord(char)})")
-                    break
+            # Show exact character that's causing problems
+            if "can't encode character" in str(e):
+                import re
+                match = re.search(r"position (\d+)", str(e))
+                if match:
+                    pos = int(match.group(1))
+                    print(f"🚨 Problem character at position {pos}: {repr(final_email[pos:pos+1])}")
+                    print(f"🔍 Context: {repr(final_email[max(0,pos-10):pos+10])}")
             
             return False
     
