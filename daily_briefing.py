@@ -204,18 +204,47 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         
         print("🔧 Setting up Gmail SMTP configuration...")
         
-        # Clean up the briefing content to remove problematic characters
-        import unicodedata
-        # Normalize and clean the content
-        clean_content = unicodedata.normalize('NFKD', briefing_content)
-        # Replace common problematic characters
-        clean_content = clean_content.replace('\xa0', ' ')  # Non-breaking space
-        clean_content = clean_content.replace('\u2013', '-')  # En dash
-        clean_content = clean_content.replace('\u2014', '--')  # Em dash
-        clean_content = clean_content.replace('\u2018', "'")  # Left single quote
-        clean_content = clean_content.replace('\u2019', "'")  # Right single quote
-        clean_content = clean_content.replace('\u201c', '"')  # Left double quote
-        clean_content = clean_content.replace('\u201d', '"')  # Right double quote
+        # Aggressive content cleaning
+        def clean_text(text):
+            """Clean text of problematic Unicode characters"""
+            if not text:
+                return text
+                
+            # Convert to string if not already
+            text = str(text)
+            
+            # Replace problematic Unicode characters
+            replacements = {
+                '\xa0': ' ',           # Non-breaking space
+                '\u2013': '-',         # En dash
+                '\u2014': '--',        # Em dash
+                '\u2018': "'",         # Left single quote
+                '\u2019': "'",         # Right single quote
+                '\u201c': '"',         # Left double quote
+                '\u201d': '"',         # Right double quote
+                '\u2026': '...',       # Ellipsis
+                '\u00a0': ' ',         # Another non-breaking space
+                '\u2022': '*',         # Bullet point
+                '\u2010': '-',         # Hyphen
+                '\u2011': '-',         # Non-breaking hyphen
+                '\u2012': '-',         # Figure dash
+            }
+            
+            for old, new in replacements.items():
+                text = text.replace(old, new)
+            
+            # Encode to ASCII and back to remove any remaining problematic characters
+            try:
+                text = text.encode('ascii', 'ignore').decode('ascii')
+            except:
+                # If that fails, use more aggressive cleaning
+                text = ''.join(char for char in text if ord(char) < 128)
+            
+            return text
+        
+        # Clean the content
+        clean_content = clean_text(briefing_content)
+        print(f"📝 Content cleaned: {len(briefing_content)} -> {len(clean_content)} characters")
         
         # Gmail SMTP configuration
         smtp_server = "smtp.gmail.com"
@@ -230,17 +259,20 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         recipients = ["danny@kontentfarm.com", "rod@kontentfarm.com"]
         print(f"📫 Recipients: {', '.join(recipients)}")
         
-        # Create message with proper encoding
-        msg = MIMEMultipart('alternative')
+        # Create clean subject
+        subject = f"Daily Content Discovery Briefing - {datetime.now().strftime('%B %d, %Y')} - 10 Premium Development Opportunities"
+        clean_subject = clean_text(subject)
+        
+        # Create message with explicit ASCII
+        msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = ", ".join(recipients)
-        msg['Subject'] = f"Daily Content Discovery Briefing - {datetime.now().strftime('%B %d, %Y')} - 10 Premium Development Opportunities"
+        msg['Subject'] = clean_subject
         
-        # Add body with explicit UTF-8 encoding
-        text_part = MIMEText(clean_content, 'plain', 'utf-8')
-        msg.attach(text_part)
+        # Add body with ASCII encoding
+        msg.attach(MIMEText(clean_content, 'plain', 'ascii'))
         
-        print("📝 Email message created successfully with clean content")
+        print("📝 Email message created successfully with ASCII-clean content")
         
         try:
             print("🌐 Connecting to Gmail SMTP server...")
@@ -251,7 +283,12 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
             print("🔑 Logging in to Gmail...")
             server.login(sender_email, sender_password)
             print("📤 Sending email message...")
-            server.send_message(msg)
+            
+            # Convert message to string and ensure ASCII
+            msg_string = msg.as_string()
+            clean_msg_string = clean_text(msg_string)
+            
+            server.sendmail(sender_email, recipients, clean_msg_string)
             server.quit()
             print("✅ Email sent successfully via Gmail!")
             logger.info("Email sent successfully via Gmail!")
@@ -259,6 +296,8 @@ CRITICAL DELIVERY REQUIREMENT: This briefing must be delivered with ten fully re
         except Exception as e:
             print(f"❌ Error sending email via Gmail: {str(e)}")
             logger.error(f"Error sending email via Gmail: {str(e)}")
+            # Show a sample of the content for debugging
+            print(f"🔍 Content sample (first 100 chars): {repr(clean_content[:100])}")
             return False
     
     def run_daily_briefing(self):
