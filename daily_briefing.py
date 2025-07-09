@@ -77,162 +77,150 @@ class TrueCrimeBriefingGenerator:
         if missing_vars:        
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-    def search_web(self, query, max_results=10):
-        """Search the web for current information"""
+    def search_web_advanced(self, query):
+        """Advanced web search with multiple sources"""
+        results = []
+        
         try:
-            # Using DuckDuckGo search (free, no API key required)
+            # Search Google News via RSS (more reliable)
             import urllib.parse
             import urllib.request
             from bs4 import BeautifulSoup
+            import xml.etree.ElementTree as ET
             
+            # Google News RSS search
             encoded_query = urllib.parse.quote_plus(query)
-            url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+            news_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
             
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
             
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=10) as response:
-                html = response.read().decode('utf-8')
+            req = urllib.request.Request(news_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as response:
+                xml_content = response.read()
             
-            soup = BeautifulSoup(html, 'html.parser')
-            results = []
+            root = ET.fromstring(xml_content)
+            for item in root.findall('.//item'):
+                title = item.find('title')
+                link = item.find('link')
+                description = item.find('description')
+                pub_date = item.find('pubDate')
+                
+                if title is not None and link is not None:
+                    results.append({
+                        'title': title.text,
+                        'url': link.text,
+                        'description': description.text if description is not None else '',
+                        'date': pub_date.text if pub_date is not None else ''
+                    })
             
-            # Extract search results
-            for result in soup.find_all('a', class_='result__url')[:max_results]:
-                link = result.get('href', '')
-                if link.startswith('http'):
-                    results.append(link)
-            
-            return results[:max_results]
+            return results[:10]
             
         except Exception as e:
-            print(f"Web search error: {str(e)}")
+            print(f"Advanced search error: {str(e)}")
             return []
 
     def search_current_cases(self):
-        """Search for current true crime cases and developments"""
-        print("🔍 Searching for current true crime cases...")
+        """Comprehensive search for current true crime cases"""
+        print("🔍 Conducting comprehensive true crime search...")
         
+        # More specific and current search terms
         search_queries = [
-            "true crime new evidence 2025",
-            "cold case solved DNA 2025", 
-            "murder case new development",
-            "criminal conviction appeal 2025",
-            "forensic breakthrough crime",
-            "true crime documentary new",
-            "criminal case new witness",
-            "murder trial verdict 2025"
+            "true crime cold case solved 2025",
+            "DNA evidence new arrest murder",
+            "criminal conviction overturned 2025", 
+            "murder case new evidence witness",
+            "serial killer identified DNA genealogy",
+            "cold case breakthrough forensics",
+            "true crime documentary development",
+            "murder trial verdict guilty 2025",
+            "criminal investigation closed solved",
+            "forensic evidence new technology crime"
         ]
         
         all_results = []
         for query in search_queries:
             print(f"🔍 Searching: {query}")
-            results = self.search_web(query, max_results=5)
-            all_results.extend(results)
-            time.sleep(1)  # Rate limiting
+            results = self.search_web_advanced(query)
+            if results:
+                all_results.extend(results)
+                print(f"   Found {len(results)} results")
+            time.sleep(2)  # More conservative rate limiting
         
+        print(f"📊 Total search results: {len(all_results)}")
         return all_results
 
     def get_research_prompt(self):
-        """Generate the research prompt with current date and search results"""
+        """Generate the research prompt with extensive search results"""
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Get current search results
+        # Get comprehensive search results
         search_results = self.search_current_cases()
-        search_results_text = "\n".join([f"- {url}" for url in search_results[:20]])
+        
+        # Format search results with more detail
+        search_results_text = ""
+        for i, result in enumerate(search_results[:30], 1):
+            search_results_text += f"{i}. {result['title']}\n   URL: {result['url']}\n   Description: {result['description'][:200]}...\n   Date: {result['date']}\n\n"
         
         return f"""
 ## ROLE DEFINITION
-You are an elite content discovery specialist operating at the level of the top 0.01% researchers in the world. Your mission is to identify, analyze, and assess true crime cases and "stranger than fiction" stories for premium content development opportunities.
+You are an elite content discovery specialist. You MUST analyze these REAL search results and provide 10 ACTUAL cases.
 
 ## CURRENT DATE: {current_date}
 
-## REAL-TIME SEARCH RESULTS
-I have conducted web searches for current true crime developments. Here are recent search results to analyze:
-
+## REAL SEARCH RESULTS FROM CURRENT NEWS
 {search_results_text}
 
-## DAILY MISSION PARAMETERS
-
-**Primary Objective:** Discover and evaluate REAL breaking or developing stories with high production potential for streaming, broadcast, and cable networks.
-
-**CRITICAL INSTRUCTION: You MUST provide 10 REAL cases from current news sources. NO hypothetical cases. NO explanations about limitations. ONLY real, current cases with actual details.**
-
-## RESEARCH METHODOLOGY
-
-**1. PREMIUM SOURCE MONITORING PRIORITIES**
-**Tier 1 Premium Sources (With Access):**
-- The New York Times, Washington Post, The Atlantic, Vanity Fair
-- New Yorker, Wired, NYMag, The Cut, Curbed
-- Time Magazine, Chicago Tribune, LA Times, The Daily Beast
-
-**2. CASE REQUIREMENTS - REAL CASES ONLY**
-
-**Focus: ADJUDICATED CASES WITH NEW DEVELOPMENTS:**
-- Post-conviction appeals with new evidence (EXCLUDING wrongful conviction/exoneration cases)
-- Solved cases with new victim discoveries or co-conspirators
-- Cases where perpetrators reveal new information from prison
-- Family members or witnesses coming forward with new details
-- New forensic analysis of closed cases
-- Documentary crews uncovering previously unknown evidence
-
-**Famous Cold Cases with Fresh Angles:**
-- DNA technology breakthroughs providing new leads
-- New witness testimony or deathbed confessions
-- Evidence re-examination with modern forensic techniques
-- Technology applications revealing new information
-
-**3. MANDATORY COMPETITIVE LANDSCAPE VERIFICATION**
-Check against all major networks: Netflix, Amazon Prime, Hulu, HBO Max, Investigation Discovery, A&E, Dateline NBC, 48 Hours, 20/20, etc.
-
-**4. DAILY OUTPUT REQUIREMENTS - 10 REAL CASES**
-
-**Distribution:**
-- 3-4 TIER 1 Cases (Immediate Development Potential)
-- 4-5 TIER 2 Cases (Short-term Monitoring/Development)  
-- 2-3 TIER 3 Cases (Long-term Archive/Future Consideration)
-
-**STRICT EXCLUSIONS:**
-- NO Innocence Project cases or wrongful conviction stories
-- NO ongoing investigations or active trials
-- ONLY adjudicated (legally resolved) cases with new developments
-- NO hypothetical or example cases
-
-## EXECUTION INSTRUCTIONS
+## CRITICAL INSTRUCTIONS - READ CAREFULLY
 
 **YOU MUST:**
-1. Analyze the search results provided above
-2. Research additional current true crime developments
-3. Provide exactly 10 REAL cases with full details
-4. Include competitive verification for each case
-5. Focus on cases with documentable new developments
+1. Analyze the search results above - these are REAL current news stories
+2. Select 10 cases that meet the criteria from these REAL results
+3. Provide full analysis for each REAL case
+4. NO explanations about limitations or access issues
+5. NO disclaimers about hypothetical nature
+6. ONLY work with the REAL information provided above
 
-**DO NOT:**
-- Explain limitations about accessing real-time information
-- Provide hypothetical or example cases
-- Suggest alternative approaches
-- Give disclaimers about the exercise
+**CASE SELECTION CRITERIA:**
+- Focus on adjudicated cases with new developments
+- Cold cases with DNA breakthroughs
+- Murder cases with new evidence
+- Cases where perpetrators have been convicted/sentenced
+- NO ongoing trials or active investigations
 
-## DAILY EMAIL FORMAT
+**STRICT EXCLUSIONS:**
+- NO Innocence Project or wrongful conviction cases
+- NO ongoing investigations
+- NO cases still in active litigation
+
+## OUTPUT FORMAT
 
 **Subject Line:** "Daily Content Discovery Briefing - {current_date} - 10 Premium Development Opportunities"
 
-**Individual Case Analysis (10 REAL Cases):**
+**Provide exactly 10 cases in this format:**
 
-**Case #[X] - [Tier Level] - [Case Type] - [Story Title]**
-- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence  
-- **Logline:** Compelling one-sentence hook
-- **Key Details:** Timeline, location, principals involved
-- **ADJUDICATION STATUS:** Confirm case is legally resolved/closed
-- **NEW DEVELOPMENT SUMMARY:** What makes this story fresh/different from prior coverage
-- **Production Assets:** Available footage, documents, interview subjects
-- **COMPETITIVE VERIFICATION:** Check results across all platforms
+**Case #[1-10] - [TIER 1/2/3] - [Case Type] - "[Case Name]"**
+- **Case Type:** Adjudicated w/New Development | Cold Case w/Fresh Evidence
+- **Logline:** One compelling sentence about the case
+- **Key Details:** Timeline, location, victim/perpetrator names from search results
+- **ADJUDICATION STATUS:** Case resolution status
+- **NEW DEVELOPMENT SUMMARY:** What's new about this case
+- **Production Assets:** Potential interview subjects, documents, footage
+- **COMPETITIVE VERIFICATION:** Check against major networks/platforms
 - **Development Recommendation:** GO/NO-GO with rationale
-- **Next Steps:** Specific actions required for advancement
+- **Next Steps:** Specific production actions
 
-**DELIVER 10 REAL CASES NOW - NO EXPLANATIONS, NO LIMITATIONS, ONLY REAL CURRENT TRUE CRIME DEVELOPMENTS.**
+**MANDATORY REQUIREMENTS:**
+- Use ONLY the real search results provided above
+- Extract actual case names, locations, and details from the news stories
+- Provide 10 complete case analyses
+- Focus on cases suitable for documentary production
+- NO explanations about limitations
+
+**START WITH CASE #1 AND CONTINUE THROUGH CASE #10. USE THE REAL SEARCH RESULTS ABOVE.**
+
+**BEGIN YOUR ANALYSIS NOW:**
         """
         
     def run_research(self):
