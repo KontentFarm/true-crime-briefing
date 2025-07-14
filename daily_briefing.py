@@ -221,7 +221,7 @@ class TrueCrimeBriefingGenerator:
         
         print(f"\n📝 Prompt length: {len(prompt)} characters")
         lines_with_articles = [line for line in prompt.split('\n') if 'VERIFIED REAL ARTICLES' in line]
-print(f"Articles section length: {len(lines_with_articles)}")
+        print(f"Articles section length: {len(lines_with_articles)}")
         
         # Check if articles are actually in the prompt
         if articles:
