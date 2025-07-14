@@ -115,62 +115,46 @@ class TrueCrimeBriefingGenerator:
         return all_articles
 
     def get_research_prompt(self):
-        """Generate prompt for investigative journalist research"""
+        """Generate educational research prompt (not commercial)"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Still search for current articles but with journalist focus
+        # Still search for current articles for context
         real_articles = self.search_real_news_api()
         
         articles_context = ""
         if real_articles:
-            articles_context = f"Recent articles found: {len(real_articles)} current stories from major publications.\n\n"
+            articles_context = f"Found {len(real_articles)} recent investigative articles for context.\n\n"
         
         return f"""
-**Research Prompt: Identifying Documentary-Ready Investigative Journalists**
+**Research Request - {current_date}**
 
-Date: {current_date}
+{articles_context}I'm conducting research on investigative journalism and need help identifying prominent American investigative journalists who have published compelling work in major publications.
 
-{articles_context}Search for prominent American investigative journalists who write for major national news and entertainment publications and specialize in:
-* National true crime cases
-* Financial fraud and corporate scams  
-* "Stranger than fiction" stories and scandals
+**Research Focus:**
+Please help me identify journalists who specialize in:
+- True crime investigations
+- Financial fraud and corporate misconduct
+- Unusual stories and scandals
+- Long-form investigative pieces
 
-**Target Publications:**
-* **The Atlantic** • **Vanity Fair** • **New Yorker** • **Wired** • **NYMag** • **The Cut** • **Curbed** • **The New York Times** • **Time Magazine** • **Chicago Tribune** • **LA Times** • **Washington Post** • **The Daily Beast** • **Rolling Stone** • **Air Mail** • **The Atavist** • **Philadelphia Inquirer** • **Bloomberg** • **Harper's** • **Business Insider** • **Wall Street Journal** • **Boston Globe** • **Baltimore Banner** • **Town & Country** • **Esquire** • **High Country News** • **Texas Monthly** • **Outside Mag** • **SF Chronicle** • **Scientific American** • **Oregonian** • **Sun Sentinel** • **Miami Herald**
+**Publications to consider:**
+The Atlantic, Vanity Fair, New Yorker, Wired, NYMag, The Cut, New York Times, Time Magazine, Chicago Tribune, LA Times, Washington Post, The Daily Beast, Rolling Stone, Bloomberg, Harper's, Business Insider, Wall Street Journal, Boston Globe, and other major national publications.
 
-**News API Supported Sources:**
-* **ABC News** • **CBS News** • **CNN** • **NBC News** • **Associated Press** • **USA Today** • **Fox News** • **Politico** • **Reuters**
+**What I need:**
+Please provide information about 5 investigative journalists, including:
+- Their name and primary publication
+- Their area of specialization 
+- Notable published investigations or series
+- Professional background information that's publicly available
 
-**Research Process:**
-1. Identify 5 journalists who meet the above criteria from these publications
-2. Compile their most well-known/impactful stories in bullet-point format
-3. Cross-reference each story against all major streaming and cable networks (Netflix, HBO, Hulu, Amazon Prime, Showtime, Investigation Discovery, A&E, Oxygen, etc.) to identify any existing documentary adaptations
-4. Exclude any journalists whose major stories have already been adapted into documentaries
-5. Include direct links to stories when possible
+**Research approach:**
+Focus on journalists whose work demonstrates strong investigative skills and has generated significant public interest. Look for writers who have covered complex stories that might translate well to other media formats.
 
-**Output Format:**
+**Educational context:**
+This research is for understanding current trends in investigative journalism and identifying examples of high-impact reporting in major publications.
 
-**Subject Line:** "Investigative Journalist Discovery Briefing - {current_date} - 5 Documentary-Ready Journalists"
-
-**Journalist #[1-5] - [Full Name]**
-- **Primary Publication:** [Main outlet they write for]
-- **Specialization:** [True crime/Financial fraud/Stranger than fiction]
-- **Contact Information:** [If available - email, Twitter, LinkedIn]
-- **Notable Stories:**
-  - • [Story Title] - [Publication] - [Year] - [Brief description]
-  - • [Story Title] - [Publication] - [Year] - [Brief description]
-  - • [Story Title] - [Publication] - [Year] - [Brief description]
-- **Competitive Analysis:** [Check each story against existing documentaries]
-- **Documentary Potential:** [Assessment of untapped stories]
-- **Development Recommendation:** [GO/NO-GO for outreach]
-- **Next Steps:** [How to approach this journalist]
-
-**Goal:** Create a curated list of journalists with compelling, unverified stories that represent untapped documentary content with no existing streaming competition.
-
-**Focus on journalists whose work hasn't been heavily adapted and who might be interested in documentary collaboration.**
-
-Begin research and provide 5 qualifying journalists:
+Please provide your analysis of 5 notable investigative journalists who meet these criteria.
         """
 
     def run_research(self):
