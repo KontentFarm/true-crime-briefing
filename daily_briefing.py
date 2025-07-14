@@ -115,66 +115,62 @@ class TrueCrimeBriefingGenerator:
         return all_articles
 
     def get_research_prompt(self):
-        """Generate prompt with REAL current articles"""
+        """Generate prompt for investigative journalist research"""
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Get real current articles
+        # Still search for current articles but with journalist focus
         real_articles = self.search_real_news_api()
         
-        if not real_articles:
-            return f"""
-No current articles found from News API. Check your API key and internet connection.
-
-Date: {current_date}
-            """
-        
-        # Format real articles
-        articles_text = ""
-        for i, article in enumerate(real_articles[:15], 1):
-            articles_text += f"""
-REAL ARTICLE #{i}:
-Title: {article['title']}
-Source: {article['source']}
-Author: {article['author']}
-Published: {article['published']}
-URL: {article['url']}
-Description: {article['description']}
----
-"""
+        articles_context = ""
+        if real_articles:
+            articles_context = f"Recent articles found: {len(real_articles)} current stories from major publications.\n\n"
         
         return f"""
-REAL ARTICLE ANALYSIS - {current_date}
+**Research Prompt: Identifying Documentary-Ready Investigative Journalists**
 
-I found {len(real_articles)} REAL current articles from major publications. Analyze these and provide cases that meet the criteria:
+Date: {current_date}
 
-{articles_text}
+{articles_context}Search for prominent American investigative journalists who write for major national news and entertainment publications and specialize in:
+* National true crime cases
+* Financial fraud and corporate scams  
+* "Stranger than fiction" stories and scandals
 
-REQUIREMENTS:
-- Use ONLY the real articles above
-- Focus on adjudicated cases (legally resolved) from 1990s onward
-- Cases with national significance
-- Include actual article URLs and author names
-- Exclude Innocence Project/wrongful conviction cases
-- Exclude cases from 1970s/1980s
+**Target Publications:**
+* **The Atlantic** • **Vanity Fair** • **New Yorker** • **Wired** • **NYMag** • **The Cut** • **Curbed** • **The New York Times** • **Time Magazine** • **Chicago Tribune** • **LA Times** • **Washington Post** • **The Daily Beast** • **Rolling Stone** • **Air Mail** • **The Atavist** • **Philadelphia Inquirer** • **Bloomberg** • **Harper's** • **Business Insider** • **Wall Street Journal** • **Boston Globe** • **Baltimore Banner** • **Town & Country** • **Esquire** • **High Country News** • **Texas Monthly** • **Outside Mag** • **SF Chronicle** • **Scientific American** • **Oregonian** • **Sun Sentinel** • **Miami Herald**
 
-FORMAT FOR EACH QUALIFYING CASE:
+**News API Supported Sources:**
+* **ABC News** • **CBS News** • **CNN** • **NBC News** • **Associated Press** • **USA Today** • **Fox News** • **Politico** • **Reuters**
 
-**Case #[X] - [Case Name from article]**
-- **Source Article:** [Actual URL from above]
-- **Publication:** [Source name from above] 
-- **Author:** [Author name from above]
-- **Published:** [Date from above]
-- **Case Details:** [From article content]
-- **Timeline:** [When case occurred]
-- **Adjudication Status:** [How resolved]
-- **Why Notable:** [National significance]
-- **Production Potential:** [Documentary appeal]
-- **Competitive Check:** [Existing coverage level]
+**Research Process:**
+1. Identify 5 journalists who meet the above criteria from these publications
+2. Compile their most well-known/impactful stories in bullet-point format
+3. Cross-reference each story against all major streaming and cable networks (Netflix, HBO, Hulu, Amazon Prime, Showtime, Investigation Discovery, A&E, Oxygen, etc.) to identify any existing documentary adaptations
+4. Exclude any journalists whose major stories have already been adapted into documentaries
+5. Include direct links to stories when possible
 
-Subject Line: Daily Content Discovery Briefing - {current_date} - Premium Development Opportunities
+**Output Format:**
 
-Analyze the real articles above and provide all qualifying cases. If fewer than 10 cases meet criteria, provide only the ones that do qualify.
+**Subject Line:** "Investigative Journalist Discovery Briefing - {current_date} - 5 Documentary-Ready Journalists"
+
+**Journalist #[1-5] - [Full Name]**
+- **Primary Publication:** [Main outlet they write for]
+- **Specialization:** [True crime/Financial fraud/Stranger than fiction]
+- **Contact Information:** [If available - email, Twitter, LinkedIn]
+- **Notable Stories:**
+  - • [Story Title] - [Publication] - [Year] - [Brief description]
+  - • [Story Title] - [Publication] - [Year] - [Brief description]
+  - • [Story Title] - [Publication] - [Year] - [Brief description]
+- **Competitive Analysis:** [Check each story against existing documentaries]
+- **Documentary Potential:** [Assessment of untapped stories]
+- **Development Recommendation:** [GO/NO-GO for outreach]
+- **Next Steps:** [How to approach this journalist]
+
+**Goal:** Create a curated list of journalists with compelling, unverified stories that represent untapped documentary content with no existing streaming competition.
+
+**Focus on journalists whose work hasn't been heavily adapted and who might be interested in documentary collaboration.**
+
+Begin research and provide 5 qualifying journalists:
         """
 
     def run_research(self):
