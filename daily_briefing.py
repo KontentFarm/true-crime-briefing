@@ -220,7 +220,8 @@ class TrueCrimeBriefingGenerator:
         prompt = self.get_enhanced_research_prompt(articles, journalist_spotlight)
         
         print(f"\n📝 Prompt length: {len(prompt)} characters")
-        print(f"Articles section length: {len([line for line in prompt.split('\n') if 'VERIFIED REAL ARTICLES' in line])}")
+        lines_with_articles = [line for line in prompt.split('\n') if 'VERIFIED REAL ARTICLES' in line]
+print(f"Articles section length: {len(lines_with_articles)}")
         
         # Check if articles are actually in the prompt
         if articles:
