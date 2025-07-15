@@ -519,7 +519,7 @@ RECOMMENDATION: Do not send briefing until this is resolved.
             verification_footer = f"""
 
 **SYSTEM VERIFICATION - FRESHNESS GUARANTEED:**
-- Search time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S PST')}
+- Search time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 - Fresh articles found: {len(real_articles)}
 - Freshness window: {self.max_age_hours} hours
 - Oldest allowed article: {(datetime.now() - timedelta(hours=self.max_age_hours)).strftime('%Y-%m-%d %H:%M:%S')}
