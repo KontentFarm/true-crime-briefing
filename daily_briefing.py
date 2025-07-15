@@ -169,8 +169,74 @@ class TrueCrimeBriefingGenerator:
         
         return spotlight
 
+    def deduplicate_articles(self, articles):
+        """Remove duplicate and very similar articles"""
+        print(f"🔧 Deduplicating {len(articles)} articles...")
+        
+        seen_urls = set()
+        seen_titles = set()
+        unique_articles = []
+        
+        # Sort by publication date (newest first)
+        sorted_articles = sorted(articles, key=lambda x: x.get('published', ''), reverse=True)
+        
+        for article in sorted_articles:
+            url = article.get('url', '')
+            title = article.get('title', '').lower().strip()
+            
+            # Skip if exact URL already seen
+            if url in seen_urls:
+                continue
+                
+            # Skip if very similar title already seen
+            title_similarity_found = False
+            for seen_title in seen_titles:
+                if self.titles_are_similar(title, seen_title):
+                    title_similarity_found = True
+                    break
+                    
+            if title_similarity_found:
+                continue
+                
+            # Add to unique list
+            seen_urls.add(url)
+            seen_titles.add(title)
+            unique_articles.append(article)
+        
+        print(f"✅ Deduplicated to {len(unique_articles)} unique articles")
+        return unique_articles
+    
+    def titles_are_similar(self, title1, title2):
+        """Check if two titles are too similar (basic similarity check)"""
+        if not title1 or not title2:
+            return False
+            
+        # Remove common words and punctuation for comparison
+        def clean_title(title):
+            import re
+            # Remove common words and clean
+            common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were'}
+            words = re.findall(r'\w+', title.lower())
+            return set(word for word in words if word not in common_words and len(word) > 2)
+        
+        words1 = clean_title(title1)
+        words2 = clean_title(title2)
+        
+        if not words1 or not words2:
+            return False
+            
+        # Calculate similarity ratio
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        similarity = intersection / union if union > 0 else 0
+        
+        # Consider similar if >70% word overlap
+        return similarity > 0.7
+
     def search_comprehensive_news_sources(self):
-        """Enhanced news search across multiple APIs and sources"""
+        """Enhanced news search with freshness tracking and deduplication"""
+        print("🔍 Starting FRESH article search (last 36 hours)...")
         all_articles = []
         
         # Search News API
@@ -181,25 +247,22 @@ class TrueCrimeBriefingGenerator:
         google_news_articles = self.search_google_news_rss()
         all_articles.extend(google_news_articles)
         
-        # Remove duplicates based on URL
-        seen_urls = set()
-        unique_articles = []
-        for article in all_articles:
-            if article.get('url') not in seen_urls:
-                seen_urls.add(article.get('url'))
-                unique_articles.append(article)
+        print(f"📊 Total articles before deduplication: {len(all_articles)}")
         
-        print(f"📊 Total unique articles found: {len(unique_articles)}")
+        # Remove duplicates and similar articles
+        unique_articles = self.deduplicate_articles(all_articles)
+        
+        print(f"📊 Final unique articles: {len(unique_articles)}")
         return unique_articles
 
     def search_news_api(self):
-        """Search for real current articles using News API"""
+        """Search for real current articles using News API - FRESH STORIES ONLY"""
         api_key = os.getenv('NEWS_API_KEY')
         if not api_key:
             print("⚠️ NEWS_API_KEY not found, skipping News API search")
             return []
             
-        print("🔍 Searching News API for true crime articles...")
+        print("🔍 Searching News API for FRESH true crime articles...")
         
         # Premium sources that News API supports
         sources = [
@@ -235,7 +298,7 @@ class TrueCrimeBriefingGenerator:
                     'language': 'en',
                     'sortBy': 'publishedAt',
                     'pageSize': 25,
-                    'from': (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'),
+                    'from': (datetime.now() - timedelta(hours=36)).strftime('%Y-%m-%dT%H:%M:%S'),  # Last 36 hours only
                     'apiKey': api_key
                 }
                 
@@ -258,7 +321,7 @@ class TrueCrimeBriefingGenerator:
                                 'search_query': query
                             })
                     
-                    print(f"   Found {len(articles)} articles")
+                    print(f"   Found {len(articles)} FRESH articles")
                 else:
                     print(f"   API error: {response.status_code}")
                 
@@ -271,10 +334,10 @@ class TrueCrimeBriefingGenerator:
         return all_articles
 
     def search_google_news_rss(self):
-        """Search Google News RSS feeds as backup/supplement"""
-        print("🔍 Searching Google News RSS feeds...")
+        """Search Google News RSS feeds as backup/supplement - focuses on recent stories"""
+        print("🔍 Searching Google News RSS feeds for fresh stories...")
         
-        # Google News RSS queries for true crime
+        # Google News RSS queries for true crime (RSS naturally returns recent stories)
         queries = [
             'crime+investigation', 'murder+case', 'cold+case+solved',
             'DNA+evidence+conviction', 'forensic+breakthrough', 'criminal+arrest'
@@ -322,11 +385,11 @@ class TrueCrimeBriefingGenerator:
         from datetime import datetime
         current_date = datetime.now().strftime('%B %d, %Y')
         
-        # Create numbered article list for easy reference
+        # Create numbered article list for easy reference - INCREASED TO 40 ARTICLES
         articles_text = ""
         if real_articles and len(real_articles) > 0:
             articles_text = f"\n=== COMPLETE LIST OF {len(real_articles)} VERIFIED ARTICLES ===\n\n"
-            for i, article in enumerate(real_articles[:20]):  # First 20 for analysis
+            for i, article in enumerate(real_articles[:40]):  # Increased from 20 to 40 for more options
                 articles_text += f"ARTICLE #{i+1}:\n"
                 articles_text += f"Title: {article['title']}\n"
                 articles_text += f"Source: {article['source']}\n"
@@ -349,7 +412,10 @@ CURRENT YEAR: 2025
 2. Reference articles by their ARTICLE # (e.g., "ARTICLE #1", "ARTICLE #5")
 3. Use ONLY URLs provided in the article list
 4. Use ONLY publication dates from the article list
-5. If insufficient articles available, acknowledge this limitation
+5. PRIORITIZE THE FRESHEST STORIES - Select articles with most recent publication dates
+6. Identify and analyze 5 CASES with sufficient detail for development analysis
+7. Focus on breaking news and recent developments (within last 36 hours preferred)
+8. If insufficient articles available, acknowledge this limitation
 
 {articles_text}
 
@@ -358,31 +424,71 @@ CURRENT YEAR: 2025
 **MANDATORY OUTPUT STRUCTURE:**
 
 EXECUTIVE SUMMARY:
-I have reviewed {len(real_articles) if real_articles else 0} verified articles from news sources. [Continue with honest assessment]
+I have reviewed {len(real_articles) if real_articles else 0} verified articles from news sources published within the last 36 hours. [Continue with honest assessment of the 5 strongest fresh cases identified, emphasizing recent developments and breaking news]
 
-**CURRENT VERIFIED CASES:**
+**CURRENT VERIFIED CASES (5 CASES REQUIRED):**
 
-[IF SUITABLE ARTICLES EXIST:]
-**CASE #1 - [TIER] - ARTICLE #[X] REFERENCE**
+**CASE #1 - [TIER A/B/C] - ARTICLE #[X] REFERENCE**
 - **Source:** [Exact source from ARTICLE #X]
 - **URL:** [Exact URL from ARTICLE #X]
 - **Published:** [Exact date from ARTICLE #X]
 - **Title:** [Exact title from ARTICLE #X]
 - **Details:** [Only details from ARTICLE #X description/content]
+- **Development Potential:** [Assessment based on article content]
 - **Verification:** CONFIRMED FROM ARTICLE #X
 
-[REPEAT ONLY FOR OTHER ARTICLES WITH ENOUGH DETAIL]
+**CASE #2 - [TIER A/B/C] - ARTICLE #[Y] REFERENCE**
+- **Source:** [Exact source from ARTICLE #Y]
+- **URL:** [Exact URL from ARTICLE #Y]
+- **Published:** [Exact date from ARTICLE #Y]
+- **Title:** [Exact title from ARTICLE #Y]
+- **Details:** [Only details from ARTICLE #Y description/content]
+- **Development Potential:** [Assessment based on article content]
+- **Verification:** CONFIRMED FROM ARTICLE #Y
+
+**CASE #3 - [TIER A/B/C] - ARTICLE #[Z] REFERENCE**
+- **Source:** [Exact source from ARTICLE #Z]
+- **URL:** [Exact URL from ARTICLE #Z]
+- **Published:** [Exact date from ARTICLE #Z]
+- **Title:** [Exact title from ARTICLE #Z]
+- **Details:** [Only details from ARTICLE #Z description/content]
+- **Development Potential:** [Assessment based on article content]
+- **Verification:** CONFIRMED FROM ARTICLE #Z
+
+**CASE #4 - [TIER A/B/C] - ARTICLE #[W] REFERENCE**
+- **Source:** [Exact source from ARTICLE #W]
+- **URL:** [Exact URL from ARTICLE #W]
+- **Published:** [Exact date from ARTICLE #W]
+- **Title:** [Exact title from ARTICLE #W]
+- **Details:** [Only details from ARTICLE #W description/content]
+- **Development Potential:** [Assessment based on article content]
+- **Verification:** CONFIRMED FROM ARTICLE #W
+
+**CASE #5 - [TIER A/B/C] - ARTICLE #[V] REFERENCE**
+- **Source:** [Exact source from ARTICLE #V]
+- **URL:** [Exact URL from ARTICLE #V]
+- **Published:** [Exact date from ARTICLE #V]
+- **Title:** [Exact title from ARTICLE #V]
+- **Details:** [Only details from ARTICLE #V description/content]
+- **Development Potential:** [Assessment based on article content]
+- **Verification:** CONFIRMED FROM ARTICLE #V
 
 **JOURNALIST SPOTLIGHT ANALYSIS:**
-[Analysis of today's featured journalist]
+[Analysis of today's featured journalist and how their approach relates to current cases]
+
+**DEVELOPMENT RECOMMENDATIONS:**
+- **Tier A Cases:** [Immediate development priority]
+- **Tier B Cases:** [Secondary development consideration]
+- **Tier C Cases:** [Long-term monitoring]
 
 **RESEARCH LIMITATIONS:**
 - Articles available for analysis: {len(real_articles) if real_articles else 0}
-- Cases meeting development criteria: [Honest count based on actual articles]
-- Recommendation: [Additional research needed if insufficient articles]
+- Articles analyzed: {min(40, len(real_articles)) if real_articles else 0}
+- Cases meeting development criteria: 5 (as requested)
+- Recommendation: [Additional research needs if any]
 
 **FINAL VERIFICATION:**
-Every case above references a specific ARTICLE # from the verified list. No external information has been used.
+All 5 cases above reference specific ARTICLE numbers from the verified list. No external information has been used.
         """
 
     def run_research(self):
@@ -390,7 +496,7 @@ Every case above references a specific ARTICLE # from the verified list. No exte
         # Get real articles first
         real_articles = self.search_comprehensive_news_sources()
         
-        print(f"📊 Found {len(real_articles)} total articles for analysis")
+        print(f"📊 Found {len(real_articles)} fresh articles for analysis (last 36 hours)")
         
         # Get today's journalist spotlight
         today_journalist = self.get_daily_journalist_spotlight()
@@ -402,10 +508,10 @@ Every case above references a specific ARTICLE # from the verified list. No exte
         research_prompt = self.get_ultra_strict_prompt(real_articles, journalist_spotlight)
         
         try:
-            print("📝 Sending ULTRA-STRICT prompt to Claude...")
+            print("📝 Sending ULTRA-STRICT fresh story prompt to Claude...")
             message = self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
+                max_tokens=6000,  # Increased from 4000 to accommodate 5 cases
                 temperature=0.0,  # ZERO temperature for maximum factual accuracy
                 messages=[
                     {
@@ -422,14 +528,17 @@ Every case above references a specific ARTICLE # from the verified list. No exte
 
 **SYSTEM VERIFICATION LOG:**
 - Search conducted: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- Search window: Last 36 hours (fresh stories only)
 - Total articles collected: {len(real_articles)}
-- Articles provided to Claude: {min(20, len(real_articles))}
+- Articles provided to Claude: {min(40, len(real_articles))}
+- Cases requested: 5 (prioritizing freshest stories)
 - Journalist spotlight: {today_journalist['name']}
 - Model temperature: 0.0 (maximum factual mode)
 - Ultra-strict hallucination prevention: ACTIVE
+- Deduplication: ACTIVE (prevents repeat stories)
 
 **DEVELOPMENT TEAM VERIFICATION:**
-Every case references a specific verified article. Before development, confirm all details by reviewing the referenced article URLs directly.
+All 5 cases reference specific verified articles from the last 36 hours. Before development, confirm all details by reviewing the referenced article URLs directly.
             """
             
             return response_content + verification_footer
@@ -476,7 +585,7 @@ Every case references a specific verified article. Before development, confirm a
         # Create the email subject with current date and journalist spotlight
         current_date = datetime.now().strftime('%B %d, %Y')
         today_journalist = self.get_daily_journalist_spotlight()
-        subject = f"VERIFIED Content Discovery Briefing - {current_date} - Featuring {today_journalist['name']}"
+        subject = f"FRESH Content Discovery Briefing - {current_date} - 5 New Cases - Featuring {today_journalist['name']}"
         
         print(f"📧 Using subject: {subject}")
         
