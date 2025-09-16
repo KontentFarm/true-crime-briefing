@@ -422,7 +422,7 @@ Recommend manual verification of RSS feed URLs.
             
             # Send to Claude for analysis
             message = self.anthropic_client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-4-sonnet",
                 max_tokens=8000,
                 temperature=0.1,
                 messages=[{"role": "user", "content": briefing_prompt}]
